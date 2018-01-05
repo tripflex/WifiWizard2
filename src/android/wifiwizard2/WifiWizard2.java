@@ -842,7 +842,7 @@ public class WifiWizard2 extends CordovaPlugin {
 
         // http://developer.android.com/reference/android/net/wifi/WifiInfo.html#getSSID()
         if(serviceInfo.startsWith("\"") && serviceInfo.endsWith("\"")){
-            ssid = ssid.substring(1, ssid.length()-1);
+            serviceInfo = serviceInfo.substring(1, serviceInfo.length()-1);
         }
 
         callbackContext.success(serviceInfo);
