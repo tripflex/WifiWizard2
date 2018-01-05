@@ -68,6 +68,13 @@ var WifiWizard2 = {
                 // Other parameters can be added depending on algorithm.
             };
         }
+        else if (algorithm === 'WEP') {
+            wifiConfig.auth = {
+                algorithm : algorithm,
+                password : password
+                // Other parameters can be added depending on algorithm.
+            };
+        }
         else if (algorithm === "New network type") {
             wifiConfig.auth = {
                 algorithm: algorithm
@@ -125,6 +132,10 @@ var WifiWizard2 = {
             switch (wifi.auth.algorithm) {
             case "WPA":
                 networkInformation.push("WPA");
+                networkInformation.push(wifi.auth.password);
+                break;
+            case 'WEP':
+                networkInformation.push('WEP');
                 networkInformation.push(wifi.auth.password);
                 break;
             case "NONE":
@@ -218,6 +229,7 @@ var WifiWizard2 = {
         }
         cordova.exec(win, fail, "WifiWizard2", "setWifiEnabled", [enabled]);
     },
+
     getConnectedNetworkID: function (win, fail) {
         if (typeof win != "function") {
             console.log("getConnectedNetworkID first parameter must be a function to handle network ID.");
@@ -225,7 +237,6 @@ var WifiWizard2 = {
         }
         cordova.exec(win, fail, "WifiWizard2", "getConnectedNetworkID", []);
     }
-
 
 };
 
