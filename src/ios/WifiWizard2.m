@@ -144,6 +144,16 @@
                                 callbackId:command.callbackId];
 }
 
+- (void)scan:(CDVInvokedUrlCommand*)command {
+    CDVPluginResult *pluginResult = nil;
+
+    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Not supported"];
+
+    [self.commandDelegate sendPluginResult:pluginResult
+                                callbackId:command.callbackId];
+}
+
+
 // Android functions
 
 - (void)addNetwork:(CDVInvokedUrlCommand*)command {

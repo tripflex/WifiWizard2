@@ -236,7 +236,28 @@ var WifiWizard2 = {
             return;
         }
         cordova.exec(win, fail, "WifiWizard2", "getConnectedNetworkID", []);
-    }
+    },
+
+    /**
+     * Scan WiFi networks and return results
+     *
+     * @param win callback function
+     * @param fail callback function if error
+     */
+    scan: function(options, win, fail) {
+        if (typeof options === 'function') {
+            fail = win;
+            win = options;
+            options = {};
+        }
+
+        if (typeof win != 'function' ) {
+            console.log("scan first parameters must be a function to handle list.");
+            return;
+        }
+
+        cordova.exec(win, fail, 'WifiWizard2', 'scan', [options]);
+    },
 
 };
 

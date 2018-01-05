@@ -17,12 +17,16 @@ package wifiwizard2;
 
 import org.apache.cordova.*;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.lang.InterruptedException;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.content.BroadcastReceiver;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiConfiguration;
@@ -52,6 +56,7 @@ public class WifiWizard2 extends CordovaPlugin {
     private static final String SET_WIFI_ENABLED = "setWifiEnabled";
     private static final String TAG = "WifiWizard2";
     private static final int    API_VERSION = VERSION.SDK_INT;
+    private static final String SCAN = "scan";
 
     private WifiManager wifiManager;
     private CallbackContext callbackContext;
@@ -80,6 +85,9 @@ public class WifiWizard2 extends CordovaPlugin {
         }
         else if(action.equals(ADD_NETWORK)) {
             return this.addNetwork(callbackContext, data);
+        }
+        else if(action.equals(SCAN)) {
+            return this.scan(callbackContext, data);
         }
         else if(action.equals(REMOVE_NETWORK)) {
             return this.removeNetwork(callbackContext, data);
@@ -128,11 +136,12 @@ public class WifiWizard2 extends CordovaPlugin {
         if(!wifiManager.isWifiEnabled()){
             Log.d(TAG, "WiFi not enabled, enabling...");
             wifiManager.setWifiEnabled(true);
-        }
 
-        if(!wifiManager.isWifiEnabled()){
-            Log.d(TAG, "WiFi enabling failed.");
-            return false;
+            // Probably not necessary, but just in case
+            if(!wifiManager.isWifiEnabled()){
+                Log.d(TAG, "WiFi enabling failed.");
+                return false;
+            }
         }
 
         return true;
@@ -161,6 +170,84 @@ public class WifiWizard2 extends CordovaPlugin {
                 return false;
             }
         }
+        return true;
+    }
+
+    /**
+     * Class to store finished boolean in
+     */
+    private class ScanSyncContext {
+        public boolean finished = false;
+    }
+
+    /**
+     * Scans networks and sends the list back on the success callback
+     * @param callbackContext   A Cordova callback context
+     * @param data  JSONArray with [0] == JSONObject
+     * @return true
+     */
+    private boolean scan(final CallbackContext callbackContext, final JSONArray data) {
+        Log.v(TAG, "Entering startScan");
+        final ScanSyncContext syncContext = new ScanSyncContext();
+
+        if(!verifyWifiEnabled()){
+            callbackContext.error("Wifi not enabled, unable to enable automagically");
+            return false;
+        }
+
+        final BroadcastReceiver receiver = new BroadcastReceiver() {
+            public void onReceive(Context context, Intent intent) {
+                Log.v(TAG, "Entering onReceive");
+                synchronized (syncContext) {
+                    if (syncContext.finished) {
+                        Log.v(TAG, "In onReceive, already finished");
+                        return;
+                    }
+                    syncContext.finished = true;
+                    context.unregisterReceiver(this);
+                }
+                Log.v(TAG, "In onReceive, success");
+                getScanResults(callbackContext, data);
+            }
+        };
+
+        final Context context = cordova.getActivity().getApplicationContext();
+
+        Log.v(TAG, "Submitting timeout to threadpool");
+        cordova.getThreadPool().submit(new Runnable() {
+            public void run() {
+                Log.v(TAG, "Entering timeout");
+                final int TEN_SECONDS = 10000;
+                try {
+                    Thread.sleep(TEN_SECONDS);
+                } catch (InterruptedException e) {
+                    Log.e(TAG, "Received InterruptedException e, " + e);
+                    // keep going into error
+                }
+                Log.v(TAG, "Thread sleep done");
+                synchronized (syncContext) {
+                    if (syncContext.finished) {
+                        Log.v(TAG, "In timeout, already finished");
+                        return;
+                    }
+                    syncContext.finished = true;
+                    context.unregisterReceiver(receiver);
+                }
+                Log.v(TAG, "In timeout, error");
+                callbackContext.error("Timed out waiting for scan to complete");
+            }
+        });
+
+        Log.v(TAG, "Registering broadcastReceiver");
+        context.registerReceiver(
+                receiver,
+                new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
+        );
+
+        if (!wifiManager.startScan()) {
+            callbackContext.error("Scan failed");
+        }
+        Log.v(TAG, "Starting wifi scan");
         return true;
     }
 
@@ -751,6 +838,11 @@ public class WifiWizard2 extends CordovaPlugin {
         if(serviceInfo == null || serviceInfo.isEmpty() || serviceInfo == "0x"){
             callbackContext.error("Wifi information is empty");
             return false;
+        }
+
+        // http://developer.android.com/reference/android/net/wifi/WifiInfo.html#getSSID()
+        if(serviceInfo.startsWith("\"") && serviceInfo.endsWith("\"")){
+            ssid = ssid.substring(1, ssid.length()-1);
         }
 
         callbackContext.success(serviceInfo);
