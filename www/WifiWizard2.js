@@ -153,8 +153,8 @@ var WifiWizard2 = {
         cordova.exec(win, fail, "WifiWizard2", "androidConnectNetwork", [WifiWizard2.formatWifiString(SSID)]);
     },
 
-    androidDisconnectNetwork: function (SSID, currentSSID, win, fail) {
-        cordova.exec(win, fail, "WifiWizard2", "androidDisconnectNetwork", [WifiWizard2.formatWifiString(SSID), WifiWizard2.formatWifiString(currentSSID)]);
+    androidDisconnectNetwork: function (SSID, win, fail) {
+        cordova.exec(win, fail, "WifiWizard2", "androidDisconnectNetwork", [WifiWizard2.formatWifiString(SSID)]);
     },
 
     listNetworks: function (win, fail) {

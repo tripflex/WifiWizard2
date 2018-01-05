@@ -396,12 +396,10 @@ public class WifiWizard2 extends CordovaPlugin {
         }
 
         String ssidToDisconnect = "";
-		String currentSSID = "";
 
         // TODO: Verify type of data here!
         try {
             ssidToDisconnect = data.getString(0);
-			currentSSID = data.getString(1);
         }
         catch (Exception e) {
             callbackContext.error(e.getMessage());
@@ -410,13 +408,9 @@ public class WifiWizard2 extends CordovaPlugin {
         }
 
         int networkIdToDisconnect = ssidToNetworkId(ssidToDisconnect);
-		int currentNetworkId = ssidToNetworkId(currentSSID);
 
         if (networkIdToDisconnect > 0) {
-			if (currentNetworkId > 0){
-				wifiManager.disableNetwork(networkIdToDisconnect);
-			}
-			wifiManager.enableNetwork(currentNetworkId, true);
+            wifiManager.disableNetwork(networkIdToDisconnect);
             callbackContext.success("Network " + ssidToDisconnect + " disconnected!");
             return true;
         }

@@ -32,7 +32,8 @@ WifiWizard2.iOSDisconnectNetwork(ssid, success, fail)
 ```
 
 # Android Functions
-Based off the original [WifiWizard](https://github.com/hoerresb/WifiWizard) however will undergo a rework. 
+ - Based off the original [WifiWizard](https://github.com/hoerresb/WifiWizard) however will undergo a rework. 
+ - **WifiWizard2** *will automagically try to enable WiFi if it's disabled when calling any android related methods that require WiFi to be enabled*
 
 ```javascript
 WifiWizard2.androidConnectNetwork(ssid, success, fail)
