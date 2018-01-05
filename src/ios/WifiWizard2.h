@@ -7,6 +7,8 @@
 - (void)iOSDisconnectNetwork:(CDVInvokedUrlCommand *)command;
 - (void)getConnectedSSID:(CDVInvokedUrlCommand*)command;
 - (void)getConnectedBSSID:(CDVInvokedUrlCommand*)command;
+- (void)isWifiEnabled:(CDVInvokedUrlCommand*)command;
+- (void)setWifiEnabled:(CDVInvokedUrlCommand*)command;
 
 // Android Functions
 - (void)addNetwork:(CDVInvokedUrlCommand*)command;
@@ -17,7 +19,5 @@
 - (void)getScanResults:(CDVInvokedUrlCommand*)command;
 - (void)startScan:(CDVInvokedUrlCommand*)command;
 - (void)disconnect:(CDVInvokedUrlCommand*)command;
-- (void)isWifiEnabled:(CDVInvokedUrlCommand*)command;
-- (void)setWifiEnabled:(CDVInvokedUrlCommand*)command;
 
 @end
