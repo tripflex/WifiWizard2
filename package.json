@@ -18,5 +18,10 @@
   "bugs": {
     "url": "https://github.com/tripflex/wifiwizard2/issues"
   },
-  "homepage": "https://github.com/tripflex/wifiwizard2#readme"
+  "homepage": "https://github.com/tripflex/wifiwizard2#readme",
+  "keywords": [
+    "ecosystem:cordova",
+    "cordova-android",
+    "cordova-ios"
+  ]
 }

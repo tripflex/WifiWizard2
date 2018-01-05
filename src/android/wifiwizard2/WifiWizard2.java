@@ -119,6 +119,26 @@ public class WifiWizard2 extends CordovaPlugin {
     }
 
     /**
+     * This method will check if WiFi is enabled, and enable it if not
+     *
+     * @return True if wifi is enabled, false if unable to enable wifi
+     */
+    private boolean verifyWifiEnabled(){
+
+        if(!wifiManager.isWifiEnabled()){
+            Log.d(TAG, "WiFi not enabled, enabling...");
+            wifiManager.setWifiEnabled(true);
+        }
+
+        if(!wifiManager.isWifiEnabled()){
+            Log.d(TAG, "WiFi enabling failed.");
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * This methods adds a network to the list of available WiFi networks.
      * If the network already exists, then it updates it.
      *
@@ -131,6 +151,11 @@ public class WifiWizard2 extends CordovaPlugin {
         WifiConfiguration wifi = new WifiConfiguration();
 
         Log.d(TAG, "WifiWizard2: addNetwork entered.");
+
+        if(!verifyWifiEnabled()){
+            callbackContext.error("Wifi not enabled, unable to enable automagically");
+            return false;
+        }
 
         try {
             // data's order for ANY object is 0: ssid, 1: authentication algorithm,
@@ -225,6 +250,11 @@ public class WifiWizard2 extends CordovaPlugin {
             return false;
         }
 
+        if(!verifyWifiEnabled()){
+            callbackContext.error("Wifi not enabled, unable to enable automagically");
+            return false;
+        }
+
         // TODO: Verify the type of data!
         try {
             String ssidToDisconnect = data.getString(0);
@@ -259,11 +289,18 @@ public class WifiWizard2 extends CordovaPlugin {
      */
     private boolean androidConnectNetwork(CallbackContext callbackContext, JSONArray data) {
         Log.d(TAG, "WifiWizard2: connectNetwork entered.");
+
         if(!validateData(data)) {
             callbackContext.error("WifiWizard2: connectNetwork invalid data");
             Log.d(TAG, "WifiWizard2: connectNetwork invalid data.");
             return false;
         }
+
+        if(!verifyWifiEnabled()){
+            callbackContext.error("Wifi not enabled, unable to enable automagically");
+            return false;
+        }
+
         String ssidToConnect = "";
 
         try {
@@ -352,6 +389,12 @@ public class WifiWizard2 extends CordovaPlugin {
             Log.d(TAG, "WifiWizard2: androidDisconnectNetwork invalid data");
             return false;
         }
+
+        if(!verifyWifiEnabled()){
+            callbackContext.error("Wifi not enabled, unable to enable automagically");
+            return false;
+        }
+
         String ssidToDisconnect = "";
 		String currentSSID = "";
 
@@ -392,6 +435,12 @@ public class WifiWizard2 extends CordovaPlugin {
      */
     private boolean disconnect(CallbackContext callbackContext) {
         Log.d(TAG, "WifiWizard2: disconnect entered.");
+
+        if(!verifyWifiEnabled()){
+            callbackContext.error("Wifi not enabled, unable to enable automagically");
+            return false;
+        }
+
         if (wifiManager.disconnect()) {
             callbackContext.success("Disconnected from current network");
             return true;
@@ -522,6 +571,12 @@ public class WifiWizard2 extends CordovaPlugin {
        *    @return    true if started was successful
        */
     private boolean startScan(CallbackContext callbackContext) {
+
+        if(!verifyWifiEnabled()){
+            callbackContext.error("Wifi not enabled, unable to enable automagically");
+            return false;
+        }
+
         if (wifiManager.startScan()) {
             callbackContext.success();
             return true;
@@ -540,7 +595,7 @@ public class WifiWizard2 extends CordovaPlugin {
     private int getConnectedNetId(){
         int networkId = -1;
 
-        if(!wifiManager.isWifiEnabled()){
+        if(!verifyWifiEnabled()){
             Log.d(TAG, "WiFi not enabled");
             return networkId;
         }
@@ -608,8 +663,8 @@ public class WifiWizard2 extends CordovaPlugin {
      *    @return    true if SSID found, false if not.
     */
     private boolean getWifiServiceInfo(CallbackContext callbackContext, boolean basicIdentifier){
-        if(!wifiManager.isWifiEnabled()){
-            callbackContext.error("Wifi is disabled");
+        if(!verifyWifiEnabled()){
+            callbackContext.error("Wifi not enabled, unable to enable automagically");
             return false;
         }
 
