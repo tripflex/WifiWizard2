@@ -1,0 +1,22 @@
+{
+  "name": "wifiwizard2",
+  "version": "2.0.0",
+  "cordova": {
+    "id": "wifiwizard2",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tripflex/wifiwizard2.git"
+  },
+  "author": "Myles McNamara",
+  "license": "Apache 2.0",
+  "description": "Cordova WiFi Manager for Android and iOS",
+  "bugs": {
+    "url": "https://github.com/tripflex/wifiwizard2/issues"
+  },
+  "homepage": "https://github.com/tripflex/wifiwizard2#readme"
+}

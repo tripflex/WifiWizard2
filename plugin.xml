@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    id="com.smyles.wifiwizard2"
+    version="2.0.0">
+  
+    <name>WifiWizard2</name>
+    <description>Cordova Wifi Manager for Android and iOS</description>
+    <license>Apache 2.0</license>
+    <keywords>cordova,network,wifi,phonegap</keywords>
+    <repo>https://github.com/tripflex/wifiwizard2.git</repo>
+    <issue>https://github.com/tripflex/wifiwizard2/issues</issue>
+
+    <js-module src="www/WifiWizard2.js" name="WifiWizard2">
+      <clobbers target="window.WifiWizard2" />
+    </js-module>
+
+  <!-- android -->
+    <platform name="android">
+      
+      <config-file target="AndroidManifest.xml" parent="/manifest">
+        <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+        <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+        <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+        <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+        <uses-permission android:name="android.permission.INTERNET" />
+      </config-file>
+      
+      <config-file target="res/xml/config.xml" parent="/*">
+        <feature name="WifiWizard2">
+          <param name="android-package" value="wifiwizard2.WifiWizard2" />
+          <param name="onload" value="true" />
+        </feature>
+      </config-file>
+
+      <source-file src="src/android/wifiwizard2/WifiWizard2.java" target-dir="src/android/wifiwizard2" />
+    </platform>
+
+    <platform name="ios">
+        <config-file target="config.xml" parent="/*">
+            <feature name="WifiWizard2">
+                <param name="ios-package" value="WifiWizard2"/>
+            </feature>
+        </config-file>
+
+        <header-file src="src/ios/WifiWizard2.h" />
+        <source-file src="src/ios/WifiWizard2.m" />
+        <framework src="SystemConfiguration.framework" />
+    </platform>
+  
+</plugin>
