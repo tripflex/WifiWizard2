@@ -111,6 +111,14 @@ This plugin is in active development. If you are wanting to have the latest and 
 ##### Releases
 Run ```cordova plugin add wifiwizard2```
 
+##### Meteor
+To install and use this plugin in a Meteor project, you have to specify the exact version from NPM repository:
+[https://www.npmjs.com/package/wifiwizard2](https://www.npmjs.com/package/wifiwizard2)
+
+As of 1/7/2017, the latest version is 2.0.0:
+
+```meteor add cordova:wifiwizard2@2.0.0```
+
 License
 ----
 
