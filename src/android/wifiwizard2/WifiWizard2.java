@@ -73,57 +73,68 @@ public class WifiWizard2 extends CordovaPlugin {
 
         this.callbackContext = callbackContext;
 
+        // Actions that do not require WiFi to be enabled
         if(action.equals(IS_WIFI_ENABLED)) {
-            return this.isWifiEnabled(callbackContext);
+            this.isWifiEnabled(callbackContext);
+            return true;
         }
         else if(action.equals(SET_WIFI_ENABLED)) {
-            return this.setWifiEnabled(callbackContext, data);
+            this.setWifiEnabled(callbackContext, data);
+            return true;
         }
-        else if (!wifiManager.isWifiEnabled()) {
+
+        if( ! verifyWifiEnabled() ) {
             callbackContext.error("Wifi is not enabled.");
-            return false;
+            return true; // Even though enable wifi failed, we still return true and handle error in callback
         }
-        else if(action.equals(ADD_NETWORK)) {
-            return this.addNetwork(callbackContext, data);
+
+        // Actions that DO require WiFi to be enabled
+        if(action.equals(ADD_NETWORK)) {
+            this.addNetwork(callbackContext, data);
         }
         else if(action.equals(SCAN)) {
-            return this.scan(callbackContext, data);
+            this.scan(callbackContext, data);
         }
         else if(action.equals(REMOVE_NETWORK)) {
-            return this.removeNetwork(callbackContext, data);
+            this.removeNetwork(callbackContext, data);
         }
         else if(action.equals(CONNECT_NETWORK)) {
-            return this.androidConnectNetwork(callbackContext, data);
+            this.androidConnectNetwork(callbackContext, data);
         }
         else if(action.equals(DISCONNECT_NETWORK)) {
-            return this.androidDisconnectNetwork(callbackContext, data);
+            this.androidDisconnectNetwork(callbackContext, data);
         }
         else if(action.equals(LIST_NETWORKS)) {
-            return this.listNetworks(callbackContext);
+            this.listNetworks(callbackContext);
         }
         else if(action.equals(START_SCAN)) {
-            return this.startScan(callbackContext);
+            this.startScan(callbackContext);
         }
         else if(action.equals(GET_SCAN_RESULTS)) {
-            return this.getScanResults(callbackContext, data);
+            this.getScanResults(callbackContext, data);
         }
         else if(action.equals(DISCONNECT)) {
-            return this.disconnect(callbackContext);
+            this.disconnect(callbackContext);
         }
         else if(action.equals(GET_CONNECTED_SSID)) {
-            return this.getConnectedSSID(callbackContext);
+            this.getConnectedSSID(callbackContext);
         }
         else if(action.equals(GET_CONNECTED_BSSID)) {
-            return this.getConnectedBSSID(callbackContext);
+            this.getConnectedBSSID(callbackContext);
         }
         else if(action.equals(GET_CONNECTED_NETWORKID)) {
-            return this.getConnectedNetworkID(callbackContext);
+            this.getConnectedNetworkID(callbackContext);
         }
         else {
             callbackContext.error("Incorrect action parameter: " + action);
+            // The ONLY time to return FALSE is when action does not exist that was called
+            // Returning false results in an INVALID_ACTION error, which translates to an error callback invoked on the JavaScript side
+            // All other errors should be handled with the fail callback (callbackContext.error)
+            // @see https://cordova.apache.org/docs/en/latest/guide/platforms/android/plugin.html
+            return false;
         }
 
-        return false;
+        return true;
     }
 
     /**
@@ -133,15 +144,24 @@ public class WifiWizard2 extends CordovaPlugin {
      */
     private boolean verifyWifiEnabled(){
 
-        if(!wifiManager.isWifiEnabled()){
+        Log.d(TAG, "WifiWizard2: verifyWifiEnabled entered.");
+        boolean isEnabled = wifiManager.isWifiEnabled();
+
+        if( ! isEnabled ){
             Log.d(TAG, "WiFi not enabled, enabling...");
             wifiManager.setWifiEnabled(true);
 
+            isEnabled = wifiManager.isWifiEnabled();
+
             // Probably not necessary, but just in case
-            if(!wifiManager.isWifiEnabled()){
+            if( isEnabled ){
+                return true;
+            } else {
                 Log.d(TAG, "WiFi enabling failed.");
                 return false;
+
             }
+
         }
 
         return true;
@@ -190,14 +210,10 @@ public class WifiWizard2 extends CordovaPlugin {
         Log.v(TAG, "Entering startScan");
         final ScanSyncContext syncContext = new ScanSyncContext();
 
-        if(!verifyWifiEnabled()){
-            callbackContext.error("Wifi not enabled, unable to enable automagically");
-            return false;
-        }
-
         final BroadcastReceiver receiver = new BroadcastReceiver() {
             public void onReceive(Context context, Intent intent) {
                 Log.v(TAG, "Entering onReceive");
+
                 synchronized (syncContext) {
                     if (syncContext.finished) {
                         Log.v(TAG, "In onReceive, already finished");
@@ -206,6 +222,7 @@ public class WifiWizard2 extends CordovaPlugin {
                     syncContext.finished = true;
                     context.unregisterReceiver(this);
                 }
+
                 Log.v(TAG, "In onReceive, success");
                 getScanResults(callbackContext, data);
             }
@@ -214,17 +231,24 @@ public class WifiWizard2 extends CordovaPlugin {
         final Context context = cordova.getActivity().getApplicationContext();
 
         Log.v(TAG, "Submitting timeout to threadpool");
+
         cordova.getThreadPool().submit(new Runnable() {
+
             public void run() {
+
                 Log.v(TAG, "Entering timeout");
+
                 final int TEN_SECONDS = 10000;
+
                 try {
                     Thread.sleep(TEN_SECONDS);
                 } catch (InterruptedException e) {
                     Log.e(TAG, "Received InterruptedException e, " + e);
                     // keep going into error
                 }
+
                 Log.v(TAG, "Thread sleep done");
+
                 synchronized (syncContext) {
                     if (syncContext.finished) {
                         Log.v(TAG, "In timeout, already finished");
@@ -233,9 +257,11 @@ public class WifiWizard2 extends CordovaPlugin {
                     syncContext.finished = true;
                     context.unregisterReceiver(receiver);
                 }
+
                 Log.v(TAG, "In timeout, error");
                 callbackContext.error("Timed out waiting for scan to complete");
             }
+
         });
 
         Log.v(TAG, "Registering broadcastReceiver");
@@ -245,8 +271,11 @@ public class WifiWizard2 extends CordovaPlugin {
         );
 
         if (!wifiManager.startScan()) {
+            Log.v(TAG, "Scan failed");
             callbackContext.error("Scan failed");
+            return false;
         }
+
         Log.v(TAG, "Starting wifi scan");
         return true;
     }
@@ -260,15 +289,11 @@ public class WifiWizard2 extends CordovaPlugin {
      * @return true    if add successful, false if add fails
      */
     private boolean addNetwork(CallbackContext callbackContext, JSONArray data) {
-        // Initialize the WifiConfiguration object
-        WifiConfiguration wifi = new WifiConfiguration();
 
         Log.d(TAG, "WifiWizard2: addNetwork entered.");
 
-        if(!verifyWifiEnabled()){
-            callbackContext.error("Wifi not enabled, unable to enable automagically");
-            return false;
-        }
+        // Initialize the WifiConfiguration object
+        WifiConfiguration wifi = new WifiConfiguration();
 
         try {
             // data's order for ANY object is 0: ssid, 1: authentication algorithm,
@@ -402,11 +427,6 @@ public class WifiWizard2 extends CordovaPlugin {
             return false;
         }
 
-        if(!verifyWifiEnabled()){
-            callbackContext.error("Wifi not enabled, unable to enable automagically");
-            return false;
-        }
-
         // TODO: Verify the type of data!
         try {
             String ssidToDisconnect = data.getString(0);
@@ -445,11 +465,6 @@ public class WifiWizard2 extends CordovaPlugin {
         if(!validateData(data)) {
             callbackContext.error("WifiWizard2: connectNetwork invalid data");
             Log.d(TAG, "WifiWizard2: connectNetwork invalid data.");
-            return false;
-        }
-
-        if(!verifyWifiEnabled()){
-            callbackContext.error("Wifi not enabled, unable to enable automagically");
             return false;
         }
 
@@ -542,11 +557,6 @@ public class WifiWizard2 extends CordovaPlugin {
             return false;
         }
 
-        if(!verifyWifiEnabled()){
-            callbackContext.error("Wifi not enabled, unable to enable automagically");
-            return false;
-        }
-
         String ssidToDisconnect = "";
 
         // TODO: Verify type of data here!
@@ -581,11 +591,6 @@ public class WifiWizard2 extends CordovaPlugin {
      */
     private boolean disconnect(CallbackContext callbackContext) {
         Log.d(TAG, "WifiWizard2: disconnect entered.");
-
-        if(!verifyWifiEnabled()){
-            callbackContext.error("Wifi not enabled, unable to enable automagically");
-            return false;
-        }
 
         if (wifiManager.disconnect()) {
             callbackContext.success("Disconnected from current network");
@@ -718,11 +723,6 @@ public class WifiWizard2 extends CordovaPlugin {
        */
     private boolean startScan(CallbackContext callbackContext) {
 
-        if(!verifyWifiEnabled()){
-            callbackContext.error("Wifi not enabled, unable to enable automagically");
-            return false;
-        }
-
         if (wifiManager.startScan()) {
             callbackContext.success();
             return true;
@@ -740,11 +740,6 @@ public class WifiWizard2 extends CordovaPlugin {
     */
     private int getConnectedNetId(){
         int networkId = -1;
-
-        if(!verifyWifiEnabled()){
-            Log.d(TAG, "WiFi not enabled");
-            return networkId;
-        }
 
         WifiInfo info = wifiManager.getConnectionInfo();
 
@@ -809,10 +804,6 @@ public class WifiWizard2 extends CordovaPlugin {
      *    @return    true if SSID found, false if not.
     */
     private boolean getWifiServiceInfo(CallbackContext callbackContext, boolean basicIdentifier){
-        if(!verifyWifiEnabled()){
-            callbackContext.error("Wifi not enabled, unable to enable automagically");
-            return false;
-        }
 
         WifiInfo info = wifiManager.getConnectionInfo();
 
@@ -889,9 +880,9 @@ public class WifiWizard2 extends CordovaPlugin {
             Log.d(TAG, "WifiWizard2: androidDisconnectNetwork invalid data");
             return false;
         }
-        
+
         String status = "";
-        
+
         try {
             status = data.getString(0);
         }
@@ -900,11 +891,11 @@ public class WifiWizard2 extends CordovaPlugin {
             Log.d(TAG, e.getMessage());
             return false;
         }
-        
+
         if (wifiManager.setWifiEnabled(status.equals("true"))) {
             callbackContext.success();
             return true;
-        } 
+        }
         else {
             callbackContext.error("Cannot enable wifi");
             return false;
