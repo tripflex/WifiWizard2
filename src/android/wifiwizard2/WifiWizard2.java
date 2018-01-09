@@ -71,6 +71,7 @@ public class WifiWizard2 extends CordovaPlugin {
     public boolean execute(String action, JSONArray data, CallbackContext callbackContext)
                             throws JSONException {
 
+        boolean wifiIsEnabled = verifyWifiEnabled();
         this.callbackContext = callbackContext;
 
         // Actions that do not require WiFi to be enabled
@@ -83,7 +84,7 @@ public class WifiWizard2 extends CordovaPlugin {
             return true;
         }
 
-        if( ! verifyWifiEnabled() ) {
+        if( ! wifiIsEnabled ) {
             callbackContext.error("Wifi is not enabled.");
             return true; // Even though enable wifi failed, we still return true and handle error in callback
         }
@@ -138,33 +139,50 @@ public class WifiWizard2 extends CordovaPlugin {
     }
 
     /**
-     * This method will check if WiFi is enabled, and enable it if not
+     * This method will check if WiFi is enabled, and enable it if not, waiting up to 10 seconds for it to enable
      *
      * @return True if wifi is enabled, false if unable to enable wifi
      */
     private boolean verifyWifiEnabled(){
 
         Log.d(TAG, "WifiWizard2: verifyWifiEnabled entered.");
-        boolean isEnabled = wifiManager.isWifiEnabled();
 
-        if( ! isEnabled ){
-            Log.d(TAG, "WiFi not enabled, enabling...");
-            wifiManager.setWifiEnabled(true);
+        if (!wifiManager.isWifiEnabled()) {
 
-            isEnabled = wifiManager.isWifiEnabled();
+            Log.i(TAG, "Enabling wi-fi...");
 
-            // Probably not necessary, but just in case
-            if( isEnabled ){
-                return true;
+            if (wifiManager.setWifiEnabled(true)) {
+                Log.i(TAG, "Wi-fi enabled");
             } else {
-                Log.d(TAG, "WiFi enabling failed.");
+                Log.e(TAG, "Wi-fi could not be enabled!");
                 return false;
-
             }
 
+            // This happens very quickly, but need to wait for it to enable. A little busy wait?
+            int count = 0;
+            // Sleep for 1 second initially
+            Thread.sleep(1000L);
+
+            while (!wifiManager.isWifiEnabled()) {
+                if (count >= 10) {
+                    Log.i(TAG, "Took too long to enable wi-fi, quitting");
+                    return false;
+                }
+
+                Log.i(TAG, "Still waiting for wi-fi to enable...");
+
+                try {
+                    Thread.sleep(1000L);
+                } catch (InterruptedException ie) {
+                    // continue
+                }
+
+                count++;
+            }
+        } else {
+            return true;
         }
 
-        return true;
     }
 
     /**
@@ -606,7 +624,6 @@ public class WifiWizard2 extends CordovaPlugin {
      *    of the currently configured networks.
      *
      *    @param    callbackContext        A Cordova callback context
-     *    @param    data                JSON Array, with [0] being SSID to connect
      *    @return    true if network disconnected, false if failed
      */
     private boolean listNetworks(CallbackContext callbackContext) {

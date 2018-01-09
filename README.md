@@ -169,9 +169,9 @@ Run ```cordova plugin add wifiwizard2```
 To install and use this plugin in a Meteor project, you have to specify the exact version from NPM repository:
 [https://www.npmjs.com/package/wifiwizard2](https://www.npmjs.com/package/wifiwizard2)
 
-As of 1/9/2017, the latest version is 2.1.0:
+As of 1/9/2017, the latest version is 2.1.1:
 
-```meteor add cordova:wifiwizard2@2.1.0```
+```meteor add cordova:wifiwizard2@2.1.1```
 
 ### Examples
 
@@ -318,7 +318,12 @@ Apache 2.0
 
 ## Changelog:
 
-#### 2.1.0 - *1/9/2017*
+#### 2.1.1 - *1/9/2017*
+- **Added Async Promise based methods**
+- Fix issue with thread running before wifi is fully enabled
+- Added thread sleep for up to 10 seconds waiting for wifi to enable
+
+#### 2.1.0 - *1/8/2017*
 - **Added Async Promise based methods**
 - Fixed incorrect Android Cordova exec methods incorrectly being called and returned (fixes INVALID ACTION errors/warnings)
 - Updated javascript code to call `fail` callback when error detected in JS (before calling Cordova)
