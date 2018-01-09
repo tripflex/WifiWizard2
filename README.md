@@ -170,6 +170,144 @@ As of 1/9/2017, the latest version is 2.1.0:
 
 ```meteor add cordova:wifiwizard2@2.1.0```
 
+### Examples
+
+##### Async WiFi Class
+
+Below is an example class you can use for connecting to WiFi networks on Android.
+  
+You will notice there is a `timeout` method that simulates a synchronous timeout/delay/pause, as well as calls to `SUIBlock` which is from my [Meteor Semantic UI Blocker plugin](https://github.com/tripflex/meteor-suiblocker), and is used to provide feedback to the user on their device.  That is what the `timeout` method is used for, to provide a better UI experience for the user by "slowing" down the process by "pausing" for 2 seconds (2000ms) between each call.  You can remove the timeout and calls to `SUIBlock` if you don't need them.
+
+```javascript
+class ExampleWiFi {
+    
+    constructor( SSID ){
+        this.SSID = SSID;
+        this.delay = 2000; // delay in ms for timeout
+    }
+
+    async connect(){
+
+        try {
+
+            SUIBlock.block( 'Attempting to connect...' ); // Example is using my Semantic UI Blocker Meteor plugin ( https://github.com/tripflex/meteor-suiblocker )
+            await this.timeout(); // Timeouts are just used to simulate better UI experience when showing messages on screen
+
+            this.config  = WifiWizard2.formatWifiConfig(this.SSID);
+
+            await this.add();
+            await this.doConnect();
+
+            SUIBlock.unblock();
+
+            return true;
+
+        } catch( error ){
+
+            console.log( 'Wifi connect catch error: ', error );
+            throw new Error( error.message ); // Throw new error to allow async handling calling this method
+        }
+    }
+
+    async add(){
+
+        SUIBlock.block( 'Adding ' + this.SSID + ' to mobile device...' );
+        await this.timeout();
+
+        try {
+
+            await WifiWizard2.addNetworkAsync( this.config );
+            SUIBlock.block( "Successfully added " + this.SSID );
+            return true;
+
+        } catch( e ) {
+
+            throw new Error( "Failed to add device WiFi network to your mobile device! Please try again, or manually connect to the device, disconnect, and then return here and try again." );
+
+        }
+    }
+
+    async doConnect(){
+
+        SUIBlock.block('Attempting connection to ' + this.SSID + ' ...' );
+
+        await this.timeout();
+
+        try {
+
+            await WifiWizard2.androidConnectNetworkAsync( this.SSID );
+            SUIBlock.block( "Successfully connected to " + this.SSID );
+            return true;
+
+        } catch( e ){
+
+            throw new Error( "Failed to connect to device WiFi SSID " + this.SSID );
+
+        }
+    }
+
+
+    /**
+     * Synchronous Sleep/Timeout `await this.timeout()`
+     */
+    timeout() {
+        let delay = parseInt( this.delay );
+        return new Promise(function(resolve, reject) {
+            setTimeout(resolve, delay);
+        });
+    }
+}
+
+module.exports = ExampleWiFi; // Not needed if using Meteor
+```
+
+##### Calling class from Async method
+
+```javascript
+async connectToWiFi() {
+
+    try {
+        let wifi = new ExampleWiFi( 'my-ssid' );
+        await wifi.connect();
+
+        // Do something after WiFi has connected!
+
+    } catch ( error ){
+
+        console.log( 'Error connecting to WiFi!', error.message );
+
+    }
+}
+```
+
+##### Calling class from Blaze, or non-async methods
+
+If you're not calling the class from an async function (required to use `await`), you can use `then` and `catch`:
+
+```javascript
+var wifi = new ExampleWiFi( 'my-ssid' );
+var wifiConnection = wifi.connect();
+wifiConnection.then( function( result ){
+   // Do something after connecting! 
+});
+
+wifiConnection.catch( function( error ){
+   // Oh no there was an error! 
+});
+```
+
+I recommend using [ES6 arrow functions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions) to maintain `this` reference.  This is especially useful if you're using Blaze and Meteor.
+
+```javascript
+this.FirstName = 'John';
+
+wifiConnection.then( result => {
+   // Do something after connecting!
+   // Using arrow functions, you still have access to `this`
+   console.log( this.FirstName + ' connected to wifi!' );
+});
+```
+
 License
 ----
 
@@ -186,6 +324,7 @@ Apache 2.0
 - Only return `false` in [Cordova Android](https://cordova.apache.org/docs/en/latest/guide/platforms/android/plugin.html) `execute` when invalid action is called
  [Issue #1](https://github.com/tripflex/WifiWizard2/issues/1)
 - Added JS doc blocks to JS methods
+- Added Async example code
 
 #### 2.0.0 - *1/5/2017*
 - Added automatic disable of currently connected network on connect call (to prevent reconnect to previous wifi ssid)
