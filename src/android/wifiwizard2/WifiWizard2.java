@@ -179,8 +179,14 @@ public class WifiWizard2 extends CordovaPlugin {
 
                 count++;
             }
-        } else {
+
+            // If we make it this far, wifi should be enabled by now
             return true;
+
+        } else {
+
+            return true;
+
         }
 
     }
