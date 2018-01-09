@@ -18,6 +18,9 @@ These are functions that can be used by both Android and iOS applications
 ```javascript
 WifiWizard2.getConnectedSSID(success, fail)
 ```
+```javascript
+WifiWizard2.getConnectedSSIDAsync()
+```
  - Returns connected network SSID (only if connected) in success callback, otherwise fail callback will be called (if not connected or unable to retrieve)
  - This does **NOT** return the BSSID if unable to obtain SSID (like original WifiWizard did)
 ```javascript
