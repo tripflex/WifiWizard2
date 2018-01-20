@@ -15,504 +15,363 @@
 
 var WifiWizard2 = {
 
-    /*iOS and Android functions*/
+	/**
+	 * Get currently connected network SSID
+	 * @returns {Promise<any>}
+	 */
+	getCurrentSSID: function () {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "getConnectedSSID", []);
+		});
 
-    /**
-     * Get currently connected network SSID
-     *
-     * @param win
-     * @param fail
-     * @returns {boolean}
-     */
-    getCurrentSSID: function (win, fail) {
-        if (typeof win != "function") {
-            this.maybeCallFail( "getCurrentSSID first parameter must be a function to handle SSID.", fail );
-            return false;
-        }
-        cordova.exec(win, fail, "WifiWizard2", "getConnectedSSID", []);
-    },
-    /**
-     * Get currently connnected BSSID (mac)
-     * @param win
-     * @param fail
-     * @returns {boolean}
-     */
-    getCurrentBSSID: function (win, fail) {
-        if (typeof win != "function") {
-            this.maybeCallFail("getCurrentSSID first parameter must be a function to handle BSSID.", fail);
-            return false;
-        }
-        cordova.exec(win, fail, "WifiWizard2", "getConnectedBSSID", []);
-    },
+	},
 
-    /*iOS only functions*/
+	/**
+	 * Get currently connected network BSSID/MAC
+	 * @returns {Promise<any>}
+	 */
+	getCurrentBSSID: function () {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "getConnectedBSSID", []);
+		});
+	},
 
-    /**
-     * Connect to network in iOS
-     * @param ssid
-     * @param ssidPassword
-     * @param win
-     * @param fail
-     */
-    iOSConnectNetwork: function (ssid, ssidPassword, win, fail) {
-        cordova.exec(win, fail, "WifiWizard2", "iOSConnectNetwork", [
-            {
-                "Ssid": ssid,
-                "Password": ssidPassword
-            }]);
-    },
+	iOSConnectNetwork: function (ssid, ssidPassword) {
 
-    /**
-     * Disconnect from network in iOS
-     * @param ssid
-     * @param win
-     * @param fail
-     */
-    iOSDisconnectNetwork: function (ssid, win, fail) {
-        cordova.exec(win, fail, "WifiWizard2", "iOSDisconnectNetwork", [
-            {
-                "Ssid": ssid
-            }]);
-    },
+		return new Promise( function( resolve, reject ){
 
-    /*Android only functions*/
+			cordova.exec(resolve, reject, "WifiWizard2", "iOSConnectNetwork", [
+				{
+					"Ssid": ssid,
+					"Password": ssidPassword
+				}]
+			);
 
-    /**
-     * Format WiFi configuration for Android Devices
-     * @param SSID
-     * @param password
-     * @param algorithm
-     * @returns {*}
-     */
-    formatWifiConfig: function (SSID, password, algorithm) {
-        var wifiConfig = {
-            SSID: WifiWizard2.formatWifiString(SSID)
-        };
-        if (!algorithm && !password) {
-            // open network
-            wifiConfig.auth = {
-                algorithm: "NONE"
-            };
-        } else if (algorithm === "WPA") {
-            wifiConfig.auth = {
-                algorithm: algorithm,
-                password: WifiWizard2.formatWifiString(password)
-                // Other parameters can be added depending on algorithm.
-            };
-        }
-        else if (algorithm === 'WEP') {
-            wifiConfig.auth = {
-                algorithm : algorithm,
-                password : password
-                // Other parameters can be added depending on algorithm.
-            };
-        }
-        else if (algorithm === "New network type") {
-            wifiConfig.auth = {
-                algorithm: algorithm
-                // Etc...
-            };
-        }
-        else {
-            console.log("Algorithm incorrect");
-            return false;
-        }
-        return wifiConfig;
-    },
+		});
 
-    /**
-     * Format WPA WiFi configuration for Android Devices
-     * @param SSID
-     * @param password
-     * @returns {*}
-     */
-    formatWPAConfig: function (SSID, password) {
-        return WifiWizard2.formatWifiConfig(SSID, password, "WPA");
-    },
+	},
 
-    /**
-     * Format WiFi SSID String
-     * @param ssid
-     * @returns {*}
-     */
-    formatWifiString: function (ssid) {
-        if (ssid === undefined || ssid === null || ssid === false) {
-            ssid = "";
-        }
-        ssid = ssid.trim();
+	iOSDisconnectNetwork: function (ssid) {
+		return new Promise( function( resolve, reject ){
 
-        if (ssid.charAt(0) != '"') {
-            ssid = '"' + ssid;
-        }
+			cordova.exec(resolve, reject, "WifiWizard2", "iOSDisconnectNetwork", [
+				{
+					"Ssid": ssid
+				}]);
 
-        if (ssid.charAt(ssid.length - 1) != '"') {
-            ssid = ssid + '"';
-        }
+		});
+	},
 
-        return ssid;
-    },
+	/**
+	 * Add wifi network configuration
+	 * @param wifi  Must be object created by formatWifiConfig()
+	 * @returns {Promise<any>}
+	 */
+	addNetwork: function (wifi) {
 
-    /**
-     * Add WiFi Network to Android Device
-     *
-     * @param wifi  Must be an object formatted by formatWifiConfig
-     * @param win
-     * @param fail
-     * @returns {boolean}
-     */
-    addNetwork: function (wifi, win, fail) {
-        if (wifi !== null && typeof wifi === "object") {
-            // Ok to proceed!
-        } else {
-            this.maybeCallFail("WifiWizard2: Invalid parameter. Wifi not an object.", fail);
-            return false;
-        }
+		return new Promise( function( resolve, reject ){
 
-        var networkInformation = [];
+			if (wifi !== null && typeof wifi === "object") {
+				// Ok to proceed!
 
-        if (wifi.SSID !== undefined && wifi.SSID !== "") {
-            networkInformation.push(wifi.SSID);
-        } else {
-            this.maybeCallFail("WifiWizard2: No SSID given.", fail);
-            return false;
-        }
+				let networkInformation = [];
 
-        if (typeof wifi.auth == "object") {
+				if (wifi.SSID !== undefined && wifi.SSID !== "") {
+					networkInformation.push(wifi.SSID);
+				} else {
+					reject("No SSID given.");
+					return false;
+				}
 
-            switch (wifi.auth.algorithm) {
-                case "WPA":
-                    networkInformation.push("WPA");
-                    networkInformation.push(wifi.auth.password);
-                    break;
-                case 'WEP':
-                    networkInformation.push('WEP');
-                    networkInformation.push(wifi.auth.password);
-                    break;
-                case "NONE":
-                    networkInformation.push("NONE");
-                    break;
-                case "Newly supported type":
-                    break;
-                default:
-                    console.log("WifiWizard2: authentication invalid.");
-            }
+				if (typeof wifi.auth == "object") {
 
-        } else {
-            this.maybeCallFail("WifiWizard2: No authentication algorithm given.", fail);
-            return false;
-        }
+					switch (wifi.auth.algorithm) {
+						case "WPA":
+							networkInformation.push("WPA");
+							networkInformation.push(wifi.auth.password);
+							break;
+						case 'WEP':
+							networkInformation.push('WEP');
+							networkInformation.push(wifi.auth.password);
+							break;
+						case "NONE":
+							networkInformation.push("NONE");
+							break;
+						case "Newly supported type":
+							break;
+						default:
+							console.log("WifiWizard2: authentication invalid.");
+					}
 
-        cordova.exec(win, fail, "WifiWizard2", "addNetwork", networkInformation);
+				} else {
+					reject("WifiWizard2: No authentication algorithm given.");
+					return false;
+				}
 
-        return true;
-    },
+				cordova.exec(resolve, reject, "WifiWizard2", "addNetwork", networkInformation);
 
-    /**
-     * Remove Network from Android Device
-     * @param SSID
-     * @param win
-     * @param fail
-     */
-    removeNetwork: function (SSID, win, fail) {
-        cordova.exec(win, fail, "WifiWizard2", "removeNetwork", [WifiWizard2.formatWifiString(SSID)]);
-    },
+			} else {
+				reject("Invalid parameter. Wifi not an object.");
+				return false;
+			}
+		});
+	},
 
-    /**
-     * Connect to SSID on Android Device
-     * @param SSID
-     * @param win
-     * @param fail
-     */
-    androidConnectNetwork: function (SSID, win, fail) {
-        cordova.exec(win, fail, "WifiWizard2", "androidConnectNetwork", [WifiWizard2.formatWifiString(SSID)]);
-    },
+	/**
+	 * Remove wifi network configuration
+	 * @param SSID
+	 * @returns {Promise<any>}
+	 */
+	removeNetwork: function (SSID) {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "removeNetwork", [WifiWizard2.formatWifiString(SSID)]);
+		});
+	},
 
-    /**
-     * Disconnect from SSID on Android Device
-     * @param SSID
-     * @param win
-     * @param fail
-     */
-    androidDisconnectNetwork: function (SSID, win, fail) {
-        cordova.exec(win, fail, "WifiWizard2", "androidDisconnectNetwork", [WifiWizard2.formatWifiString(SSID)]);
-    },
+	/**
+	 * Connect network with specified SSID
+	 * @param SSID
+	 * @returns {Promise<any>}
+	 */
+	connectNetwork: function (SSID) {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "connectNetwork", [WifiWizard2.formatWifiString(SSID)]);
+		});
+	},
 
-    /**
-     * List Networks from Android Device
-     * @param win
-     * @param fail
-     * @returns {boolean}
-     */
-    listNetworks: function (win, fail) {
-        if (typeof win != "function") {
-            this.maybeCallFail("listNetworks first parameter must be a function to handle list.", fail);
-            return false;
-        }
-        cordova.exec(win, fail, "WifiWizard2", "listNetworks", []);
-    },
+	/**
+	 * Disconnect a network based on SSID
+	 * @param SSID
+	 * @returns {Promise<any>}
+	 */
+	disconnectNetwork: function (SSID) {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "disconnectNetwork", [WifiWizard2.formatWifiString(SSID)]);
+		});
+	},
 
-    /**
-     * Get scan results from Android Device (must call startScan first)
-     * @param options
-     * @param win
-     * @param fail
-     * @returns {boolean}
-     */
-    getScanResults: function (options, win, fail) {
-        if (typeof options === "function") {
-            fail = win;
-            win = options;
-            options = {};
-        }
+	/**
+	 * Returns currently configured networks
+	 * @returns {Promise<any>}
+	 */
+	listNetworks: function () {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "listNetworks", []);
+		});
+	},
 
-        if (typeof win != "function") {
-            this.maybeCallFail("getScanResults first parameter must be a function to handle list.", fail);
-            return false;
-        }
+	/**
+	 * Get wifi scan results (must call startScan first, or just use scan())
+	 * @param options
+	 * @returns {Promise<any>}
+	 */
+	getScanResults: function (options) {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "getScanResults", [options]);
+		});
+	},
 
-        cordova.exec(win, fail, "WifiWizard2", "getScanResults", [options]);
-    },
+	/**
+	 * Start wifi network scan (results can be retrieved with getScanResults)
+	 * @returns {Promise<any>}
+	 */
+	startScan: function () {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "startScan", []);
+		});
+	},
 
-    /**
-     * Start Wifi scan on Android Device
-     * @param win
-     * @param fail
-     * @returns {boolean}
-     */
-    startScan: function (win, fail) {
-        if (typeof win != "function") {
-            this.maybeCallFail("startScan first parameter must be a function to handle list.",fail);
-            return false;
-        }
-        cordova.exec(win, fail, "WifiWizard2", "startScan", []);
-    },
+	/**
+	 * Disconnect currently connected network
+	 * @returns {Promise<any>}
+	 */
+	disconnect: function () {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "disconnect", []);
+		});
+	},
 
-    /**
-     * Disconnect from any network on Android Device
-     * @param win
-     * @param fail
-     * @returns {boolean}
-     */
-    disconnect: function (win, fail) {
-        if (typeof win != "function") {
-            this.maybeCallFail("disconnect first parameter must be a function to handle list.", fail);
-            return false;
-        }
-        cordova.exec(win, fail, "WifiWizard2", "disconnect", []);
-    },
+	/**
+	 * Check if WiFi is enabled
+	 * @returns {Promise<any>}
+	 */
+	isWifiEnabled: function () {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(
+				// Cordova can only return strings to JS, and the underlying plugin
+				// sends a "1" for true and "0" for false.
+				function (result) {
+					resolve(result == "1");
+				},
+				reject, "WifiWizard2", "isWifiEnabled", []
+			);
+		});
+	},
 
-    /**
-     * Check if WiFi is enabled
-     * @param win
-     * @param fail
-     * @returns {boolean}
-     */
-    isWifiEnabled: function (win, fail) {
-        if (typeof win != "function") {
-            this.maybeCallFail("isWifiEnabled first parameter must be a function to handle wifi status.", fail);
-            return false;
-        }
-        cordova.exec(
-            // Cordova can only return strings to JS, and the underlying plugin
-            // sends a "1" for true and "0" for false.
-            function (result) {
-                win(result == "1");
-            },
-            fail, "WifiWizard2", "isWifiEnabled", []
-        );
-    },
+	/**
+	 * Enable or Disable WiFi
+	 * @param enabled
+	 * @returns {Promise<any>}
+	 */
+	setWifiEnabled: function (enabled) {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "setWifiEnabled", [enabled]);
+		});
+	},
 
-    /**
-     * Enable wifi on device
-     * @param enabled
-     * @param win
-     * @param fail
-     */
-    setWifiEnabled: function (enabled, win, fail) {
-        if (typeof win != "function") {
-            this.maybeCallFail("setWifiEnabled second parameter must be a function to handle enable result.",fail);
-            return;
-        }
-        cordova.exec(win, fail, "WifiWizard2", "setWifiEnabled", [enabled]);
-    },
-    /**
-     * Get currently connected network ID on Android Device
-     * @param win
-     * @param fail
-     */
-    getConnectedNetworkID: function (win, fail) {
-        if (typeof win != "function") {
-            this.maybeCallFail("getConnectedNetworkID first parameter must be a function to handle network ID.", fail);
-            return;
-        }
-        cordova.exec(win, fail, "WifiWizard2", "getConnectedNetworkID", []);
-    },
+	/**
+	 * Get currently connected network ID
+	 * @returns {Promise<any>}
+	 */
+	getConnectedNetworkID: function () {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "getConnectedNetworkID", []);
+		});
+	},
 
-    /**
-     * Scan WiFi networks and return results
-     *
-     * @param options
-     * @param win callback function
-     * @param fail callback function if error
-     */
-    scan: function(options, win, fail) {
-        if (typeof options === 'function') {
-            fail = win;
-            win = options;
-            options = {};
-        }
+	/**
+	 * Start network scan and return results
+	 * @param options
+	 * @returns {Promise<any>}
+	 */
+	scan: function(options) {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, 'WifiWizard2', 'scan', [options]);
+		});
+	},
 
-        if (typeof win != 'function' ) {
-            this.maybeCallFail("scan first parameters must be a function to handle list.",fail);
-            return false;
-        }
+	/**
+	 * Get Network ID from SSID
+	 * @param SSID
+	 * @returns {Promise<any>}
+	 */
+	getSSIDNetworkID: function( SSID ){
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "getSSIDNetworkID", [WifiWizard2.formatWifiString(SSID)]);
+		});
+	},
 
-        cordova.exec(win, fail, 'WifiWizard2', 'scan', [options]);
-    },
+	/**
+	 * Enable Network
+	 * @param SSID
+	 * @returns {Promise<any>}
+	 */
+	enableNetwork: function( SSID ){
+		return new Promise(function(resolve, reject) {
+			cordova.exec(resolve, reject, "WifiWizard2", "enableNetwork", [WifiWizard2.formatWifiString(SSID)]);
+		});
+	},
 
-    /**
-     * Call fail callback when there's an error (detected in JS before calling Cordova)
-     * @param msg
-     * @param cb
-     */
-    maybeCallFail: function( msg, cb ){
-        console.log( msg );
-        if(typeof cb == "function") {
-            cb( msg );
-        }
-    },
+	/**
+	 * Disable Network
+	 * @param SSID
+	 * @returns {Promise<any>}
+	 */
+	disableNetwork: function( SSID ){
+		return new Promise(function(resolve, reject) {
+			cordova.exec(resolve, reject, "WifiWizard2", "disableNetwork", [WifiWizard2.formatWifiString(SSID)]);
+		});
+	},
 
-    // Start ASYNC Promise Functions
+	/**
+	 * Reconnect to the currently active access point, even if we are already connected.
+	 * @returns {Promise<any>}
+	 */
+	reassociate: function(){
+		return new Promise(function(resolve, reject) {
+			cordova.exec(resolve, reject, "WifiWizard2", "reassociate", []);
+		});
+	},
 
-    /**
-     * Get current SSID Async
-     */
-    getCurrentSSIDAsync: function () {
-        return new Promise(function(resolve, reject) {
-            WifiWizard2.getCurrentSSID( resolve, reject );
-        });
-    },
-    /**
-     * Get current BSSID (mac) Async
-     */
-    getCurrentBSSIDAsync: function () {
-        return new Promise(function(resolve, reject) {
-            WifiWizard2.getCurrentBSSID( resolve, reject );
-        });
-    },
-    /**
-     * iOS Connect to network SSID Async
-     * @param ssid
-     * @param ssidPassword
-     */
-    iOSConnectNetworkAsync: function (ssid, ssidPassword) {
-        return new Promise(function(resolve, reject) {
-            WifiWizard2.iOSConnectNetwork( ssid, ssidPassword, resolve, reject );
-        });
-    },
-    /**
-     * iOS disconnect from SSID Async
-     * @param ssid
-     */
-    iOSDisconnectNetworkAsync: function (ssid) {
-        return new Promise(function(resolve, reject) {
-            WifiWizard2.iOSDisconnectNetwork( ssid, resolve, reject );
-        });
-    },
-    /**
-     * Add network to Android Device Async
-     * @param wifi  Must be object formatted by formatWifiConfig()
-     */
-    addNetworkAsync: function (wifi) {
-        return new Promise(function(resolve, reject) {
-            WifiWizard2.addNetwork( wifi, resolve, reject );
-        });
-    },
-    /**
-     * Remove SSID from Android Device
-     * @param ssid
-     */
-    removeNetworkAsync: function (ssid) {
-        return new Promise(function(resolve, reject) {
-            WifiWizard2.removeNetwork( ssid, resolve, reject );
-        });
-    },
-    /**
-     * Disconnect from SSID on Android Device
-     * @param ssid
-     */
-    androidDisconnectNetworkAsync: function (ssid) {
-        return new Promise(function(resolve, reject) {
-            WifiWizard2.androidDisconnectNetwork( ssid, resolve, reject );
-        });
-    },
-    /**
-     * Connect to SSID on Android Device
-     * @param ssid
-     */
-    androidConnectNetworkAsync: function (ssid) {
-        return new Promise(function(resolve, reject) {
-            WifiWizard2.androidConnectNetwork( ssid, resolve, reject );
-        });
-    },
-    /**
-     * List networks Async
-     */
-    listNetworksAsync: function () {
-        return new Promise(function(resolve, reject) {
-            WifiWizard2.listNetworks( resolve, reject );
-        });
-    },
-    /**
-     * Start network scan Async
-     */
-    startScanAsync: function () {
-        return new Promise(function(resolve, reject) {
-            WifiWizard2.startScan( resolve, reject );
-        });
-    },
-    /**
-     * Disconnect from any network Async
-     */
-    disconnectAsync: function () {
-        return new Promise(function(resolve, reject) {
-            WifiWizard2.disconnect( resolve, reject );
-        });
-    },
-    /**
-     * Check if Wifi is enabled Async
-     */
-    isWifiEnabledAsync: function () {
-        return new Promise(function(resolve, reject) {
-            WifiWizard2.isWifiEnabled( resolve, reject );
-        });
-    },
-    /**
-     * Enable WiFi Async
-     * @param enabled
-     */
-    setWifiEnabledAsync: function (enabled) {
-        return new Promise(function(resolve, reject) {
-            WifiWizard2.setWifiEnabled( enabled, resolve, reject );
-        });
-    },
-    /**
-     * Get Connected Network ID Async
-     */
-    getConnectedNetworkIDAsync: function(){
-        return new Promise(function(resolve, reject) {
-            WifiWizard2.getConnectedNetworkID( options, resolve, reject );
-        });
-    },
-    /**
-     * Scan for networks Async
-     * @param options
-     */
-    scanAsync: function( options ){
-        return new Promise(function(resolve, reject) {
-            WifiWizard2.scan( options, resolve, reject );
-        });
-    }
+	/**
+	 * Reconnect to the currently active access point, if we are currently disconnected.
+	 * @returns {Promise<any>}
+	 */
+	reconnect: function(){
+		return new Promise(function(resolve, reject) {
+			cordova.exec(resolve, reject, "WifiWizard2", "reconnect", []);
+		});
+	},
+
+	/**
+	 * Format WiFi configuration for Android Devices
+	 * @param SSID
+	 * @param password
+	 * @param algorithm
+	 * @returns {*}
+	 */
+	formatWifiConfig: function (SSID, password, algorithm) {
+		var wifiConfig = {
+			SSID: WifiWizard2.formatWifiString(SSID)
+		};
+		if (!algorithm && !password) {
+			// open network
+			wifiConfig.auth = {
+				algorithm: "NONE"
+			};
+		} else if (algorithm === "WPA") {
+			wifiConfig.auth = {
+				algorithm: algorithm,
+				password: WifiWizard2.formatWifiString(password)
+				// Other parameters can be added depending on algorithm.
+			};
+		}
+		else if (algorithm === 'WEP') {
+			wifiConfig.auth = {
+				algorithm : algorithm,
+				password : password
+				// Other parameters can be added depending on algorithm.
+			};
+		}
+		else if (algorithm === "New network type") {
+			wifiConfig.auth = {
+				algorithm: algorithm
+				// Etc...
+			};
+		}
+		else {
+			console.log("Algorithm incorrect");
+			return false;
+		}
+		return wifiConfig;
+	},
+
+	/**
+	 * Format WPA WiFi configuration for Android Devices
+	 * @param SSID
+	 * @param password
+	 * @returns {*}
+	 */
+	formatWPAConfig: function (SSID, password) {
+		return WifiWizard2.formatWifiConfig(SSID, password, "WPA");
+	},
+
+	/**
+	 * Format WiFi SSID String
+	 * @param ssid
+	 * @returns {*}
+	 */
+	formatWifiString: function (ssid) {
+
+		if( ssid === parseInt(ssid, 10) ){
+			return ssid;
+		}
+
+		if (ssid === undefined || ssid === null || ssid === false) {
+			ssid = "";
+		}
+		ssid = ssid.trim();
+
+		if (ssid.charAt(0) != '"') {
+			ssid = '"' + ssid;
+		}
+
+		if (ssid.charAt(ssid.length - 1) != '"') {
+			ssid = ssid + '"';
+		}
+
+		return ssid;
+	},
 };
 
 module.exports = WifiWizard2;

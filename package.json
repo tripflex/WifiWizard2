@@ -1,6 +1,6 @@
 {
   "name": "wifiwizard2",
-  "version": "2.1.1",
+  "version": "3.0.0",
   "cordova": {
     "id": "wifiwizard2",
     "platforms": [
@@ -18,10 +18,21 @@
   "bugs": {
     "url": "https://github.com/tripflex/wifiwizard2/issues"
   },
+  "engines": {
+    "cordovaDependencies": {
+      "3.0.0": {
+        "cordova-android": ">=5.0.0"
+      }
+    }
+  },
   "homepage": "https://github.com/tripflex/wifiwizard2#readme",
   "keywords": [
     "ecosystem:cordova",
     "cordova-android",
     "cordova-ios"
-  ]
+  ],
+  "devDependencies": {
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.6.1"
+  }
 }
