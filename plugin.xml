@@ -18,7 +18,6 @@
 
     <!-- ES6 promise polyfill -->
     <dependency id="es6-promise-plugin" version="4.1.0" />
-    <dependency id="cordova-plugin-android-permissions" version="1.0.0" />
 
     <!-- android -->
     <platform name="android">
