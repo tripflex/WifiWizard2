@@ -12,7 +12,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package wifiwizard2;
 
 import org.apache.cordova.*;
@@ -25,6 +24,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.content.pm.PackageManager;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -39,16 +39,20 @@ import android.content.Context;
 import android.util.Log;
 import android.os.Build.VERSION;
 
+import java.net.InetAddress;
+import java.net.Inet4Address;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
 
 public class WifiWizard2 extends CordovaPlugin {
 
   private static final String TAG = "WifiWizard2";
   private static final int API_VERSION = VERSION.SDK_INT;
 
-  private static final String ADD_NETWORK = "addNetwork";
-  private static final String REMOVE_NETWORK = "removeNetwork";
-  private static final String CONNECT_NETWORK = "connectNetwork";
-  private static final String DISCONNECT_NETWORK = "diconnectNetwork";
+  private static final String ADD_NETWORK = "add";
+  private static final String REMOVE_NETWORK = "remove";
+  private static final String CONNECT_NETWORK = "connect";
+  private static final String DISCONNECT_NETWORK = "disconnectNetwork";
   private static final String DISCONNECT = "disconnect";
   private static final String LIST_NETWORKS = "listNetworks";
   private static final String START_SCAN = "startScan";
@@ -59,20 +63,25 @@ public class WifiWizard2 extends CordovaPlugin {
   private static final String IS_WIFI_ENABLED = "isWifiEnabled";
   private static final String SET_WIFI_ENABLED = "setWifiEnabled";
   private static final String SCAN = "scan";
-  private static final String ENABLE_NETWORK = "enableNetwork";
-  private static final String DISABLE_NETWORK = "disableNetwork";
+  private static final String ENABLE_NETWORK = "enable";
+  private static final String DISABLE_NETWORK = "disable";
   private static final String GET_SSID_NET_ID = "getSSIDNetworkID";
   private static final String REASSOCIATE = "reassociate";
   private static final String RECONNECT = "reconnect";
   private static final String REQUEST_FINE_LOCATION = "reconnect";
+  private static final String GET_WIFI_IP_ADDRESS = "getWifiIP";
+  private static final String GET_WIFI_IP_INFO = "getWifiIPInfo";
 
   private static final int SCAN_RESULTS_CODE = 0; // Permissions request code for getScanResults()
   private static final int SCAN_CODE = 1; // Permissions request code for scan()
   private static final int LOCATION_REQUEST_CODE = 2; // Permissions request code
-  private static final String ACCESS_FINE_LOCATION = Manifest.permission.ACCESS_FINE_LOCATION;
+  private static final String ACCESS_FINE_LOCATION = android.Manifest.permission.ACCESS_FINE_LOCATION;
+
+  private static int LAST_NET_ID = -1;
 
   private WifiManager wifiManager;
   private CallbackContext callbackContext;
+  private JSONArray passedData;
 
   /**
    * WEP has two kinds of password, a hex value that specifies the key or a character string used to
@@ -111,7 +120,7 @@ public class WifiWizard2 extends CordovaPlugin {
 
     boolean wifiIsEnabled = verifyWifiEnabled();
     this.callbackContext = callbackContext;
-    this.data = data;
+    this.passedData = data;
 
     // Actions that do not require WiFi to be enabled
     if (action.equals(IS_WIFI_ENABLED)) {
@@ -123,6 +132,30 @@ public class WifiWizard2 extends CordovaPlugin {
     } else if (action.equals(REQUEST_FINE_LOCATION)) {
       this.requestLocationPermission(LOCATION_REQUEST_CODE);
       return true;
+    } else if (action.equals(GET_WIFI_IP_ADDRESS) || action.equals(GET_WIFI_IP_INFO)) {
+      String[] ipInfo = getWiFiIPAddress();
+      String ip = ipInfo[0];
+      String subnet = ipInfo[1];
+      String fail = "0.0.0.0";
+      if (ip == null || ip.equals(fail)) {
+        callbackContext.error("No valid IP address identified");
+        return false;
+      }
+
+      // Return only IP address
+      if( action.equals( GET_WIFI_IP_ADDRESS ) ){
+        callbackContext.success(ip);
+        return true;
+      }
+
+      // Return Wifi IP Info (subnet and IP as JSON object)
+      JSONObject result = new JSONObject();
+
+      result.put("ip", ip);
+      result.put("subnet", subnet);
+
+      callbackContext.success(result);
+      return true;
     }
 
     if (!wifiIsEnabled) {
@@ -132,11 +165,11 @@ public class WifiWizard2 extends CordovaPlugin {
 
     // Actions that DO require WiFi to be enabled
     if (action.equals(ADD_NETWORK)) {
-      this.addNetwork(callbackContext, data);
+      this.add(callbackContext, data);
     } else if (action.equals(ENABLE_NETWORK)) {
-      this.enableNetwork(callbackContext, data);
+      this.enable(callbackContext, data);
     } else if (action.equals(DISABLE_NETWORK)) {
-      this.disableNetwork(callbackContext, data);
+      this.disable(callbackContext, data);
     } else if (action.equals(GET_SSID_NET_ID)) {
       this.getSSIDNetworkID(callbackContext, data);
     } else if (action.equals(REASSOCIATE)) {
@@ -146,11 +179,11 @@ public class WifiWizard2 extends CordovaPlugin {
     } else if (action.equals(SCAN)) {
       this.scan(callbackContext, data);
     } else if (action.equals(REMOVE_NETWORK)) {
-      this.removeNetwork(callbackContext, data);
+      this.remove(callbackContext, data);
     } else if (action.equals(CONNECT_NETWORK)) {
-      this.connectNetwork(callbackContext, data);
+      this.connect(callbackContext, data);
     } else if (action.equals(DISCONNECT_NETWORK)) {
-      this.diconnectNetwork(callbackContext, data);
+      this.disconnectNetwork(callbackContext, data);
     } else if (action.equals(LIST_NETWORKS)) {
       this.listNetworks(callbackContext);
     } else if (action.equals(START_SCAN)) {
@@ -266,9 +299,9 @@ public class WifiWizard2 extends CordovaPlugin {
    * @params callbackContext     A Cordova callback context.
    * @params data                JSON Array with [0] == SSID, [1] == password
    */
-  private boolean addNetwork(CallbackContext callbackContext, JSONArray data) {
+  private boolean add(CallbackContext callbackContext, JSONArray data) {
 
-    Log.d(TAG, "WifiWizard2: addNetwork entered.");
+    Log.d(TAG, "WifiWizard2: add entered.");
 
     // Initialize the WifiConfiguration object
     WifiConfiguration wifi = new WifiConfiguration();
@@ -407,12 +440,12 @@ public class WifiWizard2 extends CordovaPlugin {
    * @param data JSON Array, with [0] being SSID to connect
    * @return true if network connected, false if failed
    */
-  private boolean enableNetwork(CallbackContext callbackContext, JSONArray data) {
-    Log.d(TAG, "WifiWizard2: enableNetwork entered.");
+  private boolean enable(CallbackContext callbackContext, JSONArray data) {
+    Log.d(TAG, "WifiWizard2: enable entered.");
 
     if (!validateData(data)) {
-      callbackContext.error("WifiWizard2: enableNetwork invalid data");
-      Log.d(TAG, "WifiWizard2: enableNetwork invalid data.");
+      callbackContext.error("WifiWizard2: enable invalid data");
+      Log.d(TAG, "WifiWizard2: enable invalid data.");
       return false;
     }
 
@@ -449,11 +482,11 @@ public class WifiWizard2 extends CordovaPlugin {
    * @param data JSON Array, with [0] being SSID to connect
    * @return true if network disconnected, false if failed
    */
-  private boolean disableNetwork(CallbackContext callbackContext, JSONArray data) {
-    Log.d(TAG, "WifiWizard2: disableNetwork entered.");
+  private boolean disable(CallbackContext callbackContext, JSONArray data) {
+    Log.d(TAG, "WifiWizard2: disable entered.");
     if (!validateData(data)) {
-      callbackContext.error("WifiWizard2: disableNetwork invalid data");
-      Log.d(TAG, "WifiWizard2: disableNetwork invalid data");
+      callbackContext.error("WifiWizard2: disable invalid data");
+      Log.d(TAG, "WifiWizard2: disable invalid data");
       return false;
     }
 
@@ -487,12 +520,12 @@ public class WifiWizard2 extends CordovaPlugin {
    * @param data JSON Array, with [0] being SSID to remove
    * @return true if network removed, false if failed
    */
-  private boolean removeNetwork(CallbackContext callbackContext, JSONArray data) {
-    Log.d(TAG, "WifiWizard2: removeNetwork entered.");
+  private boolean remove(CallbackContext callbackContext, JSONArray data) {
+    Log.d(TAG, "WifiWizard2: remove entered.");
 
     if (!validateData(data)) {
-      callbackContext.error("WifiWizard2: removeNetwork data invalid");
-      Log.d(TAG, "WifiWizard2: removeNetwork data invalid");
+      callbackContext.error("WifiWizard2: remove data invalid");
+      Log.d(TAG, "WifiWizard2: remove data invalid");
       return false;
     }
 
@@ -503,14 +536,21 @@ public class WifiWizard2 extends CordovaPlugin {
       int networkIdToRemove = ssidToNetworkId(ssidToDisconnect);
 
       if (networkIdToRemove >= 0) {
-        wifiManager.removeNetwork(networkIdToRemove);
 
-        // Configurations persist by default in API 26+
-        if (API_VERSION < 26) {
-          wifiManager.saveConfiguration();
-        }
+          if( wifiManager.removeNetwork(networkIdToRemove) ){
 
-        callbackContext.success("Network removed.");
+              // Configurations persist by default in API 26+
+              if (API_VERSION < 26) {
+                  wifiManager.saveConfiguration();
+              }
+
+              callbackContext.success("Network removed.");
+
+          } else {
+
+              callbackContext.error( "Unable to remove network" );
+          }
+
         return true;
       } else {
         callbackContext.error("Network not found.");
@@ -563,12 +603,12 @@ public class WifiWizard2 extends CordovaPlugin {
    * @param data JSON Array, with [0] being SSID to connect
    * @return true if network connected, false if failed
    */
-  private boolean connectNetwork(CallbackContext callbackContext, JSONArray data) {
-    Log.d(TAG, "WifiWizard2: connectNetwork entered.");
+  private boolean connect(CallbackContext callbackContext, JSONArray data) {
+    Log.d(TAG, "WifiWizard2: connect entered.");
 
     if (!validateData(data)) {
-      callbackContext.error("WifiWizard2: connectNetwork invalid data");
-      Log.d(TAG, "WifiWizard2: connectNetwork invalid data.");
+      callbackContext.error("WifiWizard2: connect invalid data");
+      Log.d(TAG, "WifiWizard2: connect invalid data.");
       return false;
     }
 
@@ -662,11 +702,11 @@ public class WifiWizard2 extends CordovaPlugin {
    * @param data JSON Array, with [0] being SSID to connect
    * @return true if network disconnected, false if failed
    */
-  private boolean diconnectNetwork(CallbackContext callbackContext, JSONArray data) {
-    Log.d(TAG, "WifiWizard2: diconnectNetwork entered.");
+  private boolean disconnectNetwork(CallbackContext callbackContext, JSONArray data) {
+    Log.d(TAG, "WifiWizard2: disconnectNetwork entered.");
     if (!validateData(data)) {
-      callbackContext.error("WifiWizard2: diconnectNetwork invalid data");
-      Log.d(TAG, "WifiWizard2: diconnectNetwork invalid data");
+      callbackContext.error("WifiWizard2: disconnectNetwork invalid data");
+      Log.d(TAG, "WifiWizard2: disconnectNetwork invalid data");
       return false;
     }
 
@@ -866,7 +906,7 @@ public class WifiWizard2 extends CordovaPlugin {
     } else {
 
       requestLocationPermission(SCAN_RESULTS_CODE);
-
+        return true;
     }
 
   }
@@ -1116,6 +1156,59 @@ public class WifiWizard2 extends CordovaPlugin {
 
   }
 
+  private String[] getWiFiIPAddress() {
+    WifiManager wifiManager = (WifiManager) cordova.getActivity().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+    WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+    int ip = wifiInfo.getIpAddress();
+
+    String ipString = String.format(
+            "%d.%d.%d.%d",
+            (ip & 0xff),
+            (ip >> 8 & 0xff),
+            (ip >> 16 & 0xff),
+            (ip >> 24 & 0xff)
+    );
+
+    String subnet = "";
+    try {
+        InetAddress inetAddress = InetAddress.getByName(ipString);
+        subnet = getIPv4Subnet(inetAddress);
+    } catch (Exception e) {
+    }
+
+    return new String[]{ipString, subnet};
+  }
+
+  public static String getIPv4Subnet(InetAddress inetAddress) {
+    try {
+      NetworkInterface ni = NetworkInterface.getByInetAddress(inetAddress);
+      List<InterfaceAddress> intAddrs = ni.getInterfaceAddresses();
+      for (InterfaceAddress ia : intAddrs) {
+        if (!ia.getAddress().isLoopbackAddress() && ia.getAddress() instanceof Inet4Address) {
+          return getIPv4SubnetFromNetPrefixLength(ia.getNetworkPrefixLength()).getHostAddress()
+              .toString();
+        }
+      }
+    } catch (Exception e) {
+    }
+    return "";
+  }
+
+  public static InetAddress getIPv4SubnetFromNetPrefixLength(int netPrefixLength) {
+    try {
+      int shift = (1 << 31);
+      for (int i = netPrefixLength - 1; i > 0; i--) {
+        shift = (shift >> 1);
+      }
+      String subnet =
+          Integer.toString((shift >> 24) & 255) + "." + Integer.toString((shift >> 16) & 255) + "."
+              + Integer.toString((shift >> 8) & 255) + "." + Integer.toString(shift & 255);
+      return InetAddress.getByName(subnet);
+    } catch (Exception e) {
+    }
+    return null;
+  }
+
   /**
    * Validate JSON data
    */
@@ -1148,21 +1241,20 @@ public class WifiWizard2 extends CordovaPlugin {
 
     for (int r : grantResults) {
       if (r == PackageManager.PERMISSION_DENIED) {
-        this.callbackContext
-            .sendPluginResult(new PluginResult(PluginResult.Status.ERROR, PERMISSION_DENIED_ERROR));
+        callbackContext.error( "PERMISSION_DENIED" );
         return;
       }
     }
 
     switch (requestCode) {
       case SCAN_RESULTS_CODE:
-        this.getScanResults(callbackContext, this.data ); // Call method again after permissions approved
+        getScanResults(callbackContext, passedData ); // Call method again after permissions approved
         break;
       case SCAN_CODE:
-        this.scan(callbackContext, this.data ); // Call method again after permissions approved
+        scan(callbackContext, passedData ); // Call method again after permissions approved
         break;
       case LOCATION_REQUEST_CODE:
-        callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, true));
+        callbackContext.success("PERMISSION_GRANTED");
         break;
     }
 

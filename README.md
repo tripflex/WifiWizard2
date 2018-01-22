@@ -1,42 +1,33 @@
-# WifiWizard2
+# WifiWizard2 - 3.0
 
 WifiWizard2 enables Wifi management for both Android and iOS applications within Cordova/Phonegap projects.
 
-This project is a fork of the [WifiWizard](https://github.com/hoerresb/WifiWizard) plugin with fixes and updates, as well as patches taken from the [Cordova Network Manager](https://github.com/arsenal942/Cordova-Network-Manager) plugin.  Majority of credit for code base goes to those projects.
+This project is a fork of the [WifiWizard](https://github.com/hoerresb/WifiWizard) plugin with fixes and updates, as well as patches taken from the [Cordova Network Manager](https://github.com/arsenal942/Cordova-Network-Manager) plugin.
 
 *iOS has limited functionality as Apple's WifiManager equivalent is only available  as a private API. Any app that used these features would not be allowed on the app store.*
 
 ## Async Handling
-Because Cordova `exec` calls are made asynchronously, there are helper functions you can call for each function, by appending `Async` to the end of the function name.  Those functions will return the results, or a JavaScript error.  You should use `await` and `try/catch` blocks.  See below for more details, and examples.
+Because Cordova `exec` calls are made asynchronously, all methods/functions return async promises.  These functions will return the results, or a JavaScript error.  You should use `await` and `try/catch` blocks (or `.then` and `.catch`).  See below for more details, and examples.
+
+**Callbacks are not longer supported in this plugin**
 
 Promises are handled by the [Cordova PromisesPlugin](https://github.com/vstirbu/PromisesPlugin) as an ES6 polyfill if your application does not already define `window.Promise` 
-
-It is strongly recommended to use the async functions instead of callbacks, but the choice is up to you, callbacks are still supported and will remain supported for backwards compatibility.
 
 # Global Functions
 These are functions that can be used by both Android and iOS applications
 ```javascript
-WifiWizard2.getConnectedSSID(success, fail)
-```
-```javascript
-WifiWizard2.getConnectedSSIDAsync()
+WifiWizard2.getConnectedSSID()
 ```
  - Returns connected network SSID (only if connected) in success callback, otherwise fail callback will be called (if not connected or unable to retrieve)
  - This does **NOT** return the BSSID if unable to obtain SSID (like original WifiWizard did)
 ```javascript
-WifiWizard2.getConnectedBSSID(success, fail)
-```
-```javascript
-WifiWizard2.getConnectedBSSIDAsync()
+WifiWizard2.getConnectedBSSID()
 ```
  - Same as above, except BSSID (mac) is returned
 ```javascript
-WifiWizard2.scan([options], success, fail)
+WifiWizard2.scan([options])
 ```
-```javascript
-WifiWizard2.scanAsync([options])
-```
-- Same as calling `startScan` and then `getScanResults`, but this method returns the networks found in the callback
+- Same as calling `startScan` and then `getScanResults`, except this method will only resolve the promise after the scan completes and returns the results.
 
 # iOS Functions
 For functionality, you need to note the following:
@@ -45,76 +36,56 @@ For functionality, you need to note the following:
  - Need to add the 'HotspotConfiguration' and 'NetworkExtensions' capabilities to your xCode project
 
 ```javascript
-WifiWizard2.iOSConnectNetwork(ssid, ssidPassword, success, fail)
+WifiWizard2.iOSConnectNetwork(ssid, ssidPassword)
 ```
 ```javascript
-WifiWizard2.iOSConnectNetworkAsync(ssid, ssidPassword)
-```
-```javascript
-WifiWizard2.iOSDisconnectNetwork(ssid, success, fail)
-```
-```javascript
-WifiWizard2.iOSDisconnectNetworkAsync(ssid)
+WifiWizard2.iOSDisconnectNetwork(ssid)
 ```
 
 # Android Functions
- - Based off the original [WifiWizard](https://github.com/hoerresb/WifiWizard) however will undergo a rework. 
  - **WifiWizard2** *will automagically try to enable WiFi if it's disabled when calling any android related methods that require WiFi to be enabled*
 
 ```javascript
-WifiWizard2.androidConnectNetwork(ssid, success, fail)
+WifiWizard2.connect(ssid)
 ```
-```javascript
-WifiWizard2.androidConnectNetworkAsync(ssid)
-```
- - WifiWizard will automatically disable/disconnect from currently connected networks to connect to SSID passed
+ - You **MUST** call `WifiWizard2.add(wifi)` before calling `connect` as the wifi configuration must exist before you can connect
  
 ```javascript
-WifiWizard2.androidDisconnectNetwork(ssid, success, fail)
-```
-```javascript
-WifiWizard2.androidDisconnectNetworkAsync(ssid)
+WifiWizard2.disconnect(ssid)
 ```
 
 ```javascript
 WifiWizard2.formatWifiConfig(ssid, password, algorithm)
 ```
- - `algorithm` is not required if connecting to an open network
+ - `algorithm` and `password` is not required if connecting to an open network
  - Currently `WPA` and `WEP` are only supported algorithms
+ - For `WPA2` just pass `WPA` as the algorithm
 ```javascript
 WifiWizard2.formatWPAConfig(ssid, password)
 ```
+ - This is just a helper method that calls `WifiWizard2.formatWifiConfig( ssid, password, 'WPA' );`
+
 ```javascript
-WifiWizard2.addNetwork(wifi, success, fail)
+WifiWizard2.add(wifi)
 ```
+ - `wifi` must be an object formatted by `formatWifiConfig`, this **must** be done before calling `connect`
+
 ```javascript
-WifiWizard2.addNetworkAsync(wifi)
+WifiWizard2.removeNetwork(wifi)
 ```
- - `wifi` must be an object formatted by `formatWifiConfig`
-```javascript
-WifiWizard2.removeNetwork(wifi, success, fail)
-```
-```javascript
-WifiWizard2.removeNetworkAsync(wifi)
-```
+
 ```javascript
 WifiWizard2.listNetworks(success, fail)
 ```
-```javascript
-WifiWizard2.listNetworksAsync()
-```
+
 ```javascript
 WifiWizard2.startScan(success, fail)
 ```
+
 ```javascript
-WifiWizard2.startScanAsync()
+WifiWizard2.getScanResults([options])
 ```
-```javascript
-WifiWizard2.getScanResults([options], success, fail)
-```
-```javascript
-WifiWizard2.getScanResultsAsync([options])
-```
+
 - `[options]` is optional, if you do not want to specify, just pass `success` callback as first parameter, and `fail` callback as second parameter
 - Retrieves a list of the available networks as an array of objects and passes them to the function listHandler. The format of the array is:
 ```javascript
@@ -134,26 +105,41 @@ An options object may be passed. Currently, the only supported option is `numLev
 - if `(n == false)`, `*.getScanResults({numLevels: n})` will use the raw signal level;
 
 ```javascript
-WifiWizard2.isWifiEnabled(success, fail)
+WifiWizard2.isWifiEnabled()
 ```
+ - Returns boolean value of whether Wifi is enabled or not
 ```javascript
-WifiWizard2.isWifiEnabledAsync()
-```
-```javascript
-WifiWizard2.setWifiEnabled(enabled, success, fail)
-```
-```javascript
-WifiWizard2.setWifiEnabledAsync(enabled)
+WifiWizard2.setWifiEnabled(enabled)
 ```
  - Pass `true` for `enabled` parameter to set Wifi enabled
  - You do not need to call this function to set WiFi enabled to call other methods that require wifi enabled.  This plugin will automagically enable WiFi if a method is called that requires WiFi to be enabled.
+
 ```javascript
-WifiWizard2.getConnectedNetworkID(success, fail)
+WifiWizard2.enableWifi()
 ```
+
 ```javascript
-WifiWizard2.getConnectedNetworkIDAsync()
+WifiWizard2.disableWifi()
+```
+
+```javascript
+WifiWizard2.getConnectedNetworkID()
 ```
  - Returns currently connected network ID in success callback (only if connected), otherwise fail callback will be called
+
+## New in 3.0.0+
+
+```javascript
+WifiWizard2.getWifiIP()
+```
+ - Returns IPv4 address of currently connected WiFi, or rejects promise if IP not found or wifi not connected
+
+```javascript
+WifiWizard2.getWifiIPInfo()
+```
+ - Returns a JSON object with IPv4 address and subnet `{"ip": "192.168.1.2", "subnet": "255.255.255.0" }` or rejected promise if not found or not connected
+
+
 
 ### Installation
 
@@ -169,9 +155,9 @@ Run ```cordova plugin add wifiwizard2```
 To install and use this plugin in a Meteor project, you have to specify the exact version from NPM repository:
 [https://www.npmjs.com/package/wifiwizard2](https://www.npmjs.com/package/wifiwizard2)
 
-As of 1/9/2017, the latest version is 2.1.1:
+As of 1/22/2018, the latest version is 3.0.0:
 
-```meteor add cordova:wifiwizard2@2.1.1```
+```meteor add cordova:wifiwizard2@3.0.0```
 
 ### Examples
 
@@ -318,12 +304,18 @@ Apache 2.0
 
 ## Changelog:
 
-#### 2.1.1 - *1/9/2017*
+#### 3.0.0 - *1/22/2018*
+- Completely refactored JS methods, all now return Promises
+- Added `getWifiIP` and `getWifiIPInfo` functions
+- Changed method names to be more generalized (`connect` instead of `androidConnectNetwork`, etc)
+- TBD
+
+#### 2.1.1 - *1/9/2018*
 - **Added Async Promise based methods**
 - Fix issue with thread running before wifi is fully enabled
 - Added thread sleep for up to 10 seconds waiting for wifi to enable
 
-#### 2.1.0 - *1/8/2017*
+#### 2.1.0 - *1/8/2018*
 - **Added Async Promise based methods**
 - Fixed incorrect Android Cordova exec methods incorrectly being called and returned (fixes INVALID ACTION errors/warnings)
 - Updated javascript code to call `fail` callback when error detected in JS (before calling Cordova)
@@ -334,7 +326,7 @@ Apache 2.0
 - Added JS doc blocks to JS methods
 - Added Async example code
 
-#### 2.0.0 - *1/5/2017*
+#### 2.0.0 - *1/5/2018*
 - Added automatic disable of currently connected network on connect call (to prevent reconnect to previous wifi ssid)
 - Added initial `disconnect()` before and `reconnect()` after disable/enable network on connect call
 - Added `getConnectedNetworkID` to return currently connected network ID

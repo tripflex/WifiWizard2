@@ -15,27 +15,6 @@
 
 var WifiWizard2 = {
 
-	/**
-	 * Get currently connected network SSID
-	 * @returns {Promise<any>}
-	 */
-	getCurrentSSID: function () {
-		return new Promise( function( resolve, reject ){
-			cordova.exec(resolve, reject, "WifiWizard2", "getConnectedSSID", []);
-		});
-
-	},
-
-	/**
-	 * Get currently connected network BSSID/MAC
-	 * @returns {Promise<any>}
-	 */
-	getCurrentBSSID: function () {
-		return new Promise( function( resolve, reject ){
-			cordova.exec(resolve, reject, "WifiWizard2", "getConnectedBSSID", []);
-		});
-	},
-
 	iOSConnectNetwork: function (ssid, ssidPassword) {
 
 		return new Promise( function( resolve, reject ){
@@ -67,7 +46,7 @@ var WifiWizard2 = {
 	 * @param wifi  Must be object created by formatWifiConfig()
 	 * @returns {Promise<any>}
 	 */
-	addNetwork: function (wifi) {
+	add: function (wifi) {
 
 		return new Promise( function( resolve, reject ){
 
@@ -108,7 +87,7 @@ var WifiWizard2 = {
 					return false;
 				}
 
-				cordova.exec(resolve, reject, "WifiWizard2", "addNetwork", networkInformation);
+				cordova.exec(resolve, reject, "WifiWizard2", "add", networkInformation);
 
 			} else {
 				reject("Invalid parameter. Wifi not an object.");
@@ -122,9 +101,9 @@ var WifiWizard2 = {
 	 * @param SSID
 	 * @returns {Promise<any>}
 	 */
-	removeNetwork: function (SSID) {
+	remove: function (SSID) {
 		return new Promise( function( resolve, reject ){
-			cordova.exec(resolve, reject, "WifiWizard2", "removeNetwork", [WifiWizard2.formatWifiString(SSID)]);
+			cordova.exec(resolve, reject, "WifiWizard2", "remove", [WifiWizard2.formatWifiString(SSID)]);
 		});
 	},
 
@@ -133,20 +112,68 @@ var WifiWizard2 = {
 	 * @param SSID
 	 * @returns {Promise<any>}
 	 */
-	connectNetwork: function (SSID) {
+	connect: function (SSID) {
 		return new Promise( function( resolve, reject ){
-			cordova.exec(resolve, reject, "WifiWizard2", "connectNetwork", [WifiWizard2.formatWifiString(SSID)]);
+			cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID)]);
 		});
 	},
 
 	/**
-	 * Disconnect a network based on SSID
+	 * Disconnect (current if SSID not supplied)
 	 * @param SSID
 	 * @returns {Promise<any>}
 	 */
-	disconnectNetwork: function (SSID) {
+	disconnect: function (SSID) {
 		return new Promise( function( resolve, reject ){
-			cordova.exec(resolve, reject, "WifiWizard2", "disconnectNetwork", [WifiWizard2.formatWifiString(SSID)]);
+
+			if( SSID ){
+				cordova.exec(resolve, reject, "WifiWizard2", "disconnectNetwork", [WifiWizard2.formatWifiString(SSID)]);
+			} else {
+				cordova.exec(resolve, reject, "WifiWizard2", "disconnect", []);
+			}
+
+		});
+	},
+
+	/**
+	 * Enable Network
+	 * @param SSID
+	 * @returns {Promise<any>}
+	 */
+	enable: function( SSID ){
+		return new Promise(function(resolve, reject) {
+			cordova.exec(resolve, reject, "WifiWizard2", "enable", [WifiWizard2.formatWifiString(SSID)]);
+		});
+	},
+
+	/**
+	 * Disable Network
+	 * @param SSID
+	 * @returns {Promise<any>}
+	 */
+	disable: function( SSID ){
+		return new Promise(function(resolve, reject) {
+			cordova.exec(resolve, reject, "WifiWizard2", "disable", [WifiWizard2.formatWifiString(SSID)]);
+		});
+	},
+
+	/**
+	 * Reconnect to the currently active access point, even if we are already connected.
+	 * @returns {Promise<any>}
+	 */
+	reassociate: function(){
+		return new Promise(function(resolve, reject) {
+			cordova.exec(resolve, reject, "WifiWizard2", "reassociate", []);
+		});
+	},
+
+	/**
+	 * Reconnect to the currently active access point, if we are currently disconnected.
+	 * @returns {Promise<any>}
+	 */
+	reconnect: function(){
+		return new Promise(function(resolve, reject) {
+			cordova.exec(resolve, reject, "WifiWizard2", "reconnect", []);
 		});
 	},
 
@@ -161,13 +188,13 @@ var WifiWizard2 = {
 	},
 
 	/**
-	 * Get wifi scan results (must call startScan first, or just use scan())
+	 * Start network scan and return results
 	 * @param options
 	 * @returns {Promise<any>}
 	 */
-	getScanResults: function (options) {
+	scan: function(options) {
 		return new Promise( function( resolve, reject ){
-			cordova.exec(resolve, reject, "WifiWizard2", "getScanResults", [options]);
+			cordova.exec(resolve, reject, 'WifiWizard2', 'scan', [options]);
 		});
 	},
 
@@ -182,12 +209,13 @@ var WifiWizard2 = {
 	},
 
 	/**
-	 * Disconnect currently connected network
+	 * Get wifi scan results (must call startScan first, or just use scan())
+	 * @param options
 	 * @returns {Promise<any>}
 	 */
-	disconnect: function () {
+	getScanResults: function (options) {
 		return new Promise( function( resolve, reject ){
-			cordova.exec(resolve, reject, "WifiWizard2", "disconnect", []);
+			cordova.exec(resolve, reject, "WifiWizard2", "getScanResults", [options]);
 		});
 	},
 
@@ -220,27 +248,49 @@ var WifiWizard2 = {
 	},
 
 	/**
-	 * Get currently connected network ID
+	 * Enable WiFi
+	 * @param enabled
 	 * @returns {Promise<any>}
 	 */
-	getConnectedNetworkID: function () {
+	enableWifi: function () {
 		return new Promise( function( resolve, reject ){
-			cordova.exec(resolve, reject, "WifiWizard2", "getConnectedNetworkID", []);
+			cordova.exec(resolve, reject, "WifiWizard2", "setWifiEnabled", [true]);
 		});
 	},
 
 	/**
-	 * Start network scan and return results
-	 * @param options
+	 * Enable WiFi
+	 * @param enabled
 	 * @returns {Promise<any>}
 	 */
-	scan: function(options) {
+	disableWifi: function () {
 		return new Promise( function( resolve, reject ){
-			cordova.exec(resolve, reject, 'WifiWizard2', 'scan', [options]);
+			cordova.exec(resolve, reject, "WifiWizard2", "setWifiEnabled", [false]);
 		});
 	},
 
-	/**
+  /**
+	 * Get Wifi IP
+   * @returns {Promise<any>}
+   */
+  getWifiIP: function(){
+    return new Promise( function( resolve, reject ){
+      cordova.exec(resolve, reject, "WifiWizard2", "getWifiIP", []);
+    });
+  },
+  /**
+	 * Get Wifi IP and Subnet Address
+	 *
+	 * This method returns a JSON object similar to: { "ip": "0.0.0.0", "subnet": "0.0.0.0" }
+   * @returns {Promise<any>}
+   */
+  getWifiIPInfo: function(){
+    return new Promise( function( resolve, reject ){
+      cordova.exec(resolve, reject, "WifiWizard2", "getWifiIPInfo", []);
+    });
+  },
+
+  /**
 	 * Get Network ID from SSID
 	 * @param SSID
 	 * @returns {Promise<any>}
@@ -252,44 +302,33 @@ var WifiWizard2 = {
 	},
 
 	/**
-	 * Enable Network
-	 * @param SSID
+	 * Get currently connected network ID
 	 * @returns {Promise<any>}
 	 */
-	enableNetwork: function( SSID ){
-		return new Promise(function(resolve, reject) {
-			cordova.exec(resolve, reject, "WifiWizard2", "enableNetwork", [WifiWizard2.formatWifiString(SSID)]);
+	getConnectedNetworkID: function () {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "getConnectedNetworkID", []);
 		});
 	},
 
 	/**
-	 * Disable Network
-	 * @param SSID
+	 * Get currently connected network SSID
 	 * @returns {Promise<any>}
 	 */
-	disableNetwork: function( SSID ){
-		return new Promise(function(resolve, reject) {
-			cordova.exec(resolve, reject, "WifiWizard2", "disableNetwork", [WifiWizard2.formatWifiString(SSID)]);
+	getCurrentSSID: function () {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "getConnectedSSID", []);
 		});
+
 	},
 
 	/**
-	 * Reconnect to the currently active access point, even if we are already connected.
+	 * Get currently connected network BSSID/MAC
 	 * @returns {Promise<any>}
 	 */
-	reassociate: function(){
-		return new Promise(function(resolve, reject) {
-			cordova.exec(resolve, reject, "WifiWizard2", "reassociate", []);
-		});
-	},
-
-	/**
-	 * Reconnect to the currently active access point, if we are currently disconnected.
-	 * @returns {Promise<any>}
-	 */
-	reconnect: function(){
-		return new Promise(function(resolve, reject) {
-			cordova.exec(resolve, reject, "WifiWizard2", "reconnect", []);
+	getCurrentBSSID: function () {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "getConnectedBSSID", []);
 		});
 	},
 
@@ -372,6 +411,20 @@ var WifiWizard2 = {
 
 		return ssid;
 	},
+
+	/**
+	 * Synchronous Sleep/Timeout `await this.timeout()`
+	 */
+	timeout: function( delay ) {
+
+		if( ! delay ){
+			delay = 2000; // 2s timeout by default
+		}
+
+		return new Promise(function(resolve, reject) {
+			setTimeout(resolve, delay);
+		});
+	}
 };
 
 module.exports = WifiWizard2;
