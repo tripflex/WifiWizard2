@@ -68,7 +68,7 @@ public class WifiWizard2 extends CordovaPlugin {
   private static final String GET_SSID_NET_ID = "getSSIDNetworkID";
   private static final String REASSOCIATE = "reassociate";
   private static final String RECONNECT = "reconnect";
-  private static final String REQUEST_FINE_LOCATION = "reconnect";
+  private static final String REQUEST_FINE_LOCATION = "requestFineLocation";
   private static final String GET_WIFI_IP_ADDRESS = "getWifiIP";
   private static final String GET_WIFI_IP_INFO = "getWifiIPInfo";
 

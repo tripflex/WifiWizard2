@@ -13,6 +13,13 @@ Because Cordova `exec` calls are made asynchronously, all methods/functions retu
 
 Promises are handled by the [Cordova PromisesPlugin](https://github.com/vstirbu/PromisesPlugin) as an ES6 polyfill if your application does not already define `window.Promise` 
 
+## Demo Meteor Project
+To test this plugin as well as provide some example code for others to work off of, I have created an example Meteor project you can find here:
+
+[https://github.com/tripflex/WifiWizard2Demo](https://github.com/tripflex/WifiWizard2Demo)
+
+This demo has examples of using both async functions (with `async/await` and `try/catch` blocks), as well as non async functions with `.then` and `.catch`
+
 # Global Functions
 These are functions that can be used by both Android and iOS applications
 ```javascript
@@ -48,11 +55,14 @@ WifiWizard2.iOSDisconnectNetwork(ssid)
 ```javascript
 WifiWizard2.connect(ssid)
 ```
+ - `ssid` can either be an SSID (string) or a network ID (integer)
  - You **MUST** call `WifiWizard2.add(wifi)` before calling `connect` as the wifi configuration must exist before you can connect
  
 ```javascript
 WifiWizard2.disconnect(ssid)
 ```
+ - `ssid` can either be an SSID (string) or a network ID (integer)
+ - `ssid` is **OPTIONAL** .. if not passed, will disconnect current WiFi
 
 ```javascript
 WifiWizard2.formatWifiConfig(ssid, password, algorithm)
@@ -75,11 +85,11 @@ WifiWizard2.removeNetwork(wifi)
 ```
 
 ```javascript
-WifiWizard2.listNetworks(success, fail)
+WifiWizard2.listNetworks()
 ```
 
 ```javascript
-WifiWizard2.startScan(success, fail)
+WifiWizard2.startScan()
 ```
 
 ```javascript
@@ -95,9 +105,15 @@ networks = [
         "BSSID": bssid // MAC address of WiFi router as string
         "frequency": frequency of the access point channel in MHz
         "capabilities": capabilities // Describes the authentication, key management, and encryption schemes supported by the access point.
+        "timestamp": timestamp // timestamp of when the scan was completed
+        "channelWidth":
+        "centerFreq0":
+        "centerFreq1":
     }
 ]
 ```
+- `channelWidth` `centerFreq0` and `centerFreq1` are only supported on API > 23 (Marshmallow), any older API will return null for these values
+
 An options object may be passed. Currently, the only supported option is `numLevels`, and it has the following behavior: 
 
 - if `(n == true || n < 2)`, `*.getScanResults({numLevels: n})` will return data as before, split in 5 levels;
@@ -115,19 +131,18 @@ WifiWizard2.setWifiEnabled(enabled)
  - You do not need to call this function to set WiFi enabled to call other methods that require wifi enabled.  This plugin will automagically enable WiFi if a method is called that requires WiFi to be enabled.
 
 ```javascript
+WifiWizard2.getConnectedNetworkID()
+```
+ - Returns currently connected network ID in success callback (only if connected), otherwise fail callback will be called
+
+## New to 3.0.0+
+```javascript
 WifiWizard2.enableWifi()
 ```
 
 ```javascript
 WifiWizard2.disableWifi()
 ```
-
-```javascript
-WifiWizard2.getConnectedNetworkID()
-```
- - Returns currently connected network ID in success callback (only if connected), otherwise fail callback will be called
-
-## New in 3.0.0+
 
 ```javascript
 WifiWizard2.getWifiIP()
@@ -139,7 +154,58 @@ WifiWizard2.getWifiIPInfo()
 ```
  - Returns a JSON object with IPv4 address and subnet `{"ip": "192.168.1.2", "subnet": "255.255.255.0" }` or rejected promise if not found or not connected
 
+```javascript
+WifiWizard2.reconnect()
+```
+ - Reconnect to the currently active access point, **if we are currently disconnected.**
 
+```javascript
+WifiWizard2.reassociate()
+```
+ - Reconnect to the currently active access point, **even if we are already connected.**
+
+```javascript
+WifiWizard2.getSSIDNetworkID(ssid)
+```
+ - Get Android Network ID from passed SSID
+
+```javascript
+WifiWizard2.disable(ssid)
+```
+ - `ssid` can either be an SSID (string) or a network ID (integer)
+ - Disable the passed SSID network
+
+```javascript
+WifiWizard2.requestPermission()
+```
+ - Request `ACCESS_FINE_LOCATION` permssion
+ - This Android permission is required to run `scan`, `startStart` and `getScanResults`
+ - You can request permission by running this function manually, or WifiWizard2 will automagically request permission when one of the functions above is called
+
+```javascript
+WifiWizard2.enable(ssid)
+```
+ - `ssid` can either be an SSID (string) or a network ID (integer)
+ - Enable the passed SSID network
+
+```javascript
+WifiWizard2.timeout(delay)
+```
+ - `delay` should be time in milliseconds to delay
+ - Helper async timeout delay, `delay` is optional, default is 2000ms = 2 seconds
+ - This method always returns a resolved promise after the delay, it will never reject or throw an error
+###### Example inside async function:
+```javascript
+await WifiWizard2.timeout(4000);
+// do something after 4 seconds
+```
+
+###### Example inside standard non-async function:
+```javascript
+WifiWizard2.timeout(4000).then( function(){
+    // do something after waiting 4 seconds
+}):
+```
 
 ### Installation
 

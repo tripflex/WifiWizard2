@@ -333,6 +333,20 @@ var WifiWizard2 = {
 	},
 
 	/**
+	 * Request ACCESS_FINE_LOCATION permission
+	 *
+	 * This permission is required by Android to return scan results, you can manually request it prior to running `scan`
+	 * or this plugin will automatically do it when the scan is ran.
+	 *
+	 * @returns {Promise<any>}
+	 */
+	requestPermission: function () {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "requestFineLocation", []);
+		});
+	},
+
+	/**
 	 * Format WiFi configuration for Android Devices
 	 * @param SSID
 	 * @param password
