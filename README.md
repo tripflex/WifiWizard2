@@ -20,6 +20,16 @@ To test this plugin as well as provide some example code for others to work off 
 
 This demo has examples of using both async functions (with `async/await` and `try/catch` blocks), as well as non async functions with `.then` and `.catch`
 
+## Android Permissions and Notes
+In order to obtain scan results (to call `scan` or `startScan` then `getScanResults`) your application must have the `ACCESS_FINE_LOCATION` Android Permission.  You can do this by calling the `requestPermission` method detailed below, or
+this plugin will automagically do this for you when you call `scan` or `startScan` functions.
+
+Newer versions of Android will **not** allow you to `remove` or `disable` networks that were not created by your application.  If you are having issues using this features, with your device connected to your computer, run `adb logcat` to view Android Logs for specific error.
+
+### Android Oreo 8.0.0+
+A lot of things have changed in Android Oreo 8.0.0+, specifically when it comes to permissions of managing networks that were not created by your application.
+
+
 # Global Functions
 These are functions that can be used by both Android and iOS applications
 ```javascript
@@ -63,6 +73,7 @@ WifiWizard2.disconnect(ssid)
 ```
  - `ssid` can either be an SSID (string) or a network ID (integer)
  - `ssid` is **OPTIONAL** .. if not passed, will disconnect current WiFi
+ - Note that almost all Android versions now will just automatically reconnect to last wifi after disconnecting
 
 ```javascript
 WifiWizard2.formatWifiConfig(ssid, password, algorithm)
@@ -81,8 +92,10 @@ WifiWizard2.add(wifi)
  - `wifi` must be an object formatted by `formatWifiConfig`, this **must** be done before calling `connect`
 
 ```javascript
-WifiWizard2.removeNetwork(wifi)
+WifiWizard2.remove(ssid)
 ```
+ - `ssid` can either be an SSID (string) or a network ID (integer)
+ - Please note, most newer versions of Android will only allow wifi to be removed if created by your application
 
 ```javascript
 WifiWizard2.listNetworks()
@@ -91,11 +104,12 @@ WifiWizard2.listNetworks()
 ```javascript
 WifiWizard2.startScan()
 ```
+ - It is recommended to just use the `scan` method instead of `startScan`
 
 ```javascript
 WifiWizard2.getScanResults([options])
 ```
-
+- `getScanResults` should only be called after calling `startScan` (it is recommended to use `scan` instead as this starts the scan, then returns the results)
 - `[options]` is optional, if you do not want to specify, just pass `success` callback as first parameter, and `fail` callback as second parameter
 - Retrieves a list of the available networks as an array of objects and passes them to the function listHandler. The format of the array is:
 ```javascript
@@ -174,6 +188,7 @@ WifiWizard2.disable(ssid)
 ```
  - `ssid` can either be an SSID (string) or a network ID (integer)
  - Disable the passed SSID network
+ - Please note that most newer versions of Android will only allow you to disable networks created by your application
 
 ```javascript
 WifiWizard2.requestPermission()
@@ -194,6 +209,7 @@ WifiWizard2.timeout(delay)
  - `delay` should be time in milliseconds to delay
  - Helper async timeout delay, `delay` is optional, default is 2000ms = 2 seconds
  - This method always returns a resolved promise after the delay, it will never reject or throw an error
+
 ###### Example inside async function:
 ```javascript
 await WifiWizard2.timeout(4000);
@@ -374,7 +390,7 @@ Apache 2.0
 - Completely refactored JS methods, all now return Promises
 - Added `getWifiIP` and `getWifiIPInfo` functions
 - Changed method names to be more generalized (`connect` instead of `androidConnectNetwork`, etc)
-- TBD
+- Added `requestPermission` and automatic request permission when call method that requires them
 
 #### 2.1.1 - *1/9/2018*
 - **Added Async Promise based methods**
