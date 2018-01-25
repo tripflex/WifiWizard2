@@ -160,9 +160,13 @@ public class WifiWizard2 extends CordovaPlugin {
 
             // This happens very quickly, but need to wait for it to enable. A little busy wait?
             int count = 0;
-            // Sleep for 1 second initially
-            Thread.sleep(1000L);
 
+			try {
+				Thread.sleep(1000L);
+			} catch (InterruptedException ie) {
+				// continue
+			}
+		
             while (!wifiManager.isWifiEnabled()) {
                 if (count >= 10) {
                     Log.i(TAG, "Took too long to enable wi-fi, quitting");
