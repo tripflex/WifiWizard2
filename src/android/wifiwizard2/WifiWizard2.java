@@ -28,7 +28,10 @@ import android.content.pm.PackageManager;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
+import android.net.NetworkRequest;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiEnterpriseConfig;
@@ -381,6 +384,11 @@ public class WifiWizard2 extends CordovaPlugin {
         callbackContext.error("AUTH_TYPE_NOT_SUPPORTED");
         return false;
 
+      }
+
+      // Set network to highest priority (deprecated in API >= 26)
+      if( API_VERSION < 26 ){
+        wifi.priority = getMaxWifiPriority(wifiManager) + 1;
       }
 
       // After processing authentication types, add or update network
@@ -1280,6 +1288,24 @@ public class WifiWizard2 extends CordovaPlugin {
         break;
     }
 
+  }
+
+  /**
+   * Figure out what the highest priority network in the network list is and return that priority
+   */
+  private static int getMaxWifiPriority(final WifiManager wifiManager) {
+    final List<WifiConfiguration> configurations = wifiManager.getConfiguredNetworks();
+    int maxPriority = 0;
+    for (WifiConfiguration config : configurations) {
+      if (config.priority > maxPriority) {
+        maxPriority = config.priority;
+      }
+    }
+
+    Log.d(TAG, "WifiWizard: Found max WiFi priority of "
+        + maxPriority);
+
+    return maxPriority;
   }
 
   /**

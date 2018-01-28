@@ -98,7 +98,7 @@ var WifiWizard2 = {
 
 	/**
 	 * Remove wifi network configuration
-	 * @param SSID
+	 * @param {string|int} [SSID]
 	 * @returns {Promise<any>}
 	 */
 	remove: function (SSID) {
@@ -109,7 +109,7 @@ var WifiWizard2 = {
 
 	/**
 	 * Connect network with specified SSID
-	 * @param SSID
+	 * @param {string|int} [SSID]
 	 * @returns {Promise<any>}
 	 */
 	connect: function (SSID) {
@@ -120,7 +120,7 @@ var WifiWizard2 = {
 
 	/**
 	 * Disconnect (current if SSID not supplied)
-	 * @param SSID
+	 * @param {string|int} [SSID]
 	 * @returns {Promise<any>}
 	 */
 	disconnect: function (SSID) {
@@ -137,7 +137,7 @@ var WifiWizard2 = {
 
 	/**
 	 * Enable Network
-	 * @param SSID
+	 * @param {string|int} [SSID]
 	 * @returns {Promise<any>}
 	 */
 	enable: function( SSID ){
@@ -148,7 +148,7 @@ var WifiWizard2 = {
 
 	/**
 	 * Disable Network
-	 * @param SSID
+	 * @param {string|int} [SSID]
 	 * @returns {Promise<any>}
 	 */
 	disable: function( SSID ){
@@ -249,7 +249,6 @@ var WifiWizard2 = {
 
 	/**
 	 * Enable WiFi
-	 * @param enabled
 	 * @returns {Promise<any>}
 	 */
 	enableWifi: function () {
@@ -260,7 +259,6 @@ var WifiWizard2 = {
 
 	/**
 	 * Enable WiFi
-	 * @param enabled
 	 * @returns {Promise<any>}
 	 */
 	disableWifi: function () {
@@ -292,7 +290,7 @@ var WifiWizard2 = {
 
   /**
 	 * Get Network ID from SSID
-	 * @param SSID
+	 * @param {string|int} [SSID]
 	 * @returns {Promise<any>}
 	 */
 	getSSIDNetworkID: function( SSID ){
@@ -348,7 +346,7 @@ var WifiWizard2 = {
 
 	/**
 	 * Format WiFi configuration for Android Devices
-	 * @param SSID
+	 * @param {string|int} [SSID]
 	 * @param password
 	 * @param algorithm
 	 * @returns {*}
@@ -391,7 +389,7 @@ var WifiWizard2 = {
 
 	/**
 	 * Format WPA WiFi configuration for Android Devices
-	 * @param SSID
+	 * @param {string|int} [SSID]
 	 * @param password
 	 * @returns {*}
 	 */
