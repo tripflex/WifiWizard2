@@ -107,20 +107,65 @@ var WifiWizard2 = {
 		});
 	},
 
-	/**
-	 * Connect network with specified SSID
-	 * @param {string|int} [SSID]
-	 * @returns {Promise<any>}
-	 */
-	connect: function (SSID) {
-		return new Promise( function( resolve, reject ){
-			cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID)]);
-		});
-	},
+  /**
+   * Connect network with specified SSID
+	 *
+	 * This method will first add the wifi configuration, then enable the network, returning promise when connection is verified.
+	 * 
+   * @param {string|int} [SSID]
+	 * @param {string} [password=]
+	 * @param {string} [algorithm=NONE]			WPA, WPA (for WPA2), WEP or NONE (NONE by default)
+   * @returns {Promise<any>}
+   */
+  connect: function (SSID, password, algorithm ) {
+    return new Promise( function( resolve, reject ){
+
+      if( ! SSID ){
+        reject( 'SSID is missing!' );
+        return;
+      }
+
+      var wifiConfig = WifiWizard2.formatWifiConfig( SSID, password, algorithm );
+
+      if( ! wifiConfig ){
+        reject( 'Algorithm incorrect');
+        return;
+      }
+
+      WifiWizard2.add( wifiConfig ).then( function( newNetID ){
+
+        // Successfully updated or added wifiConfig
+        cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID)]);
+
+        // Catch error adding/updating network
+      }).catch( function(error){
+
+        // This means the connection could have been setup by mobile phone user, or another app (separate from ours)
+        // Newer version of Android will NOT allow you to update, remove, any wifi networks setup by user or other apps (regardless of perms set)
+        if( error === "ERROR_UPDATING_NETWORK" ){
+
+          // This error above should only be returned when the add method was able to pull a network ID (as it tries to update instead of adding)
+          // Lets go ahead and attempt to connect to that SSID (using the existing wifi configuration)
+          cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID)]);
+
+        } else {
+
+          reject( error );
+
+        }
+
+      }); // Close ADD
+
+    });
+  },
 
 	/**
 	 * Disconnect (current if SSID not supplied)
-	 * @param {string|int} [SSID]
+	 *
+	 * This method, if passed an SSID, will first disable the network, and then remove it from the device.  To only "disconnect" (ie disable in android),
+	 * call WifiWizard2.disable() instead of disconnect.
+	 *
+	 * @param {string|int} [SSID=all]
 	 * @returns {Promise<any>}
 	 */
 	disconnect: function (SSID) {
@@ -329,6 +374,24 @@ var WifiWizard2 = {
 			cordova.exec(resolve, reject, "WifiWizard2", "getConnectedBSSID", []);
 		});
 	},
+	/**
+	 * Check if current WiFi connection has connection to the internet
+	 * @returns {Promise<any>}
+	 */
+	isConnectedToInternet: function () {
+		return new Promise( function( resolve, reject ){
+
+      cordova.exec(
+          // Cordova can only return strings to JS, and the underlying plugin
+          // sends a "1" for true and "0" for false.
+          function (result) {
+            resolve(result == "1");
+          },
+          reject, "WifiWizard2", "isConnectedToInternet", []
+      );
+
+    });
+	},
 
 	/**
 	 * Request ACCESS_FINE_LOCATION permission
@@ -347,8 +410,8 @@ var WifiWizard2 = {
 	/**
 	 * Format WiFi configuration for Android Devices
 	 * @param {string|int} [SSID]
-	 * @param password
-	 * @param algorithm
+	 * @param {string} [password]
+	 * @param {string} [algorithm]
 	 * @returns {*}
 	 */
 	formatWifiConfig: function (SSID, password, algorithm) {

@@ -28,16 +28,20 @@ import android.content.pm.PackageManager;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
+
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.net.NetworkRequest;
+
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiEnterpriseConfig;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.SupplicantState;
+import android.net.ConnectivityManager;
+
 import android.content.Context;
 import android.util.Log;
 import android.os.Build.VERSION;
@@ -46,6 +50,8 @@ import java.net.InetAddress;
 import java.net.Inet4Address;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
+
+import java.net.UnknownHostException;
 
 public class WifiWizard2 extends CordovaPlugin {
 
@@ -74,6 +80,7 @@ public class WifiWizard2 extends CordovaPlugin {
   private static final String REQUEST_FINE_LOCATION = "requestFineLocation";
   private static final String GET_WIFI_IP_ADDRESS = "getWifiIP";
   private static final String GET_WIFI_IP_INFO = "getWifiIPInfo";
+  private static final String IS_CONNECTED_TO_INTERNET = "isConnectedToInternet";
 
   private static final int SCAN_RESULTS_CODE = 0; // Permissions request code for getScanResults()
   private static final int SCAN_CODE = 1; // Permissions request code for scan()
@@ -85,6 +92,8 @@ public class WifiWizard2 extends CordovaPlugin {
   private WifiManager wifiManager;
   private CallbackContext callbackContext;
   private JSONArray passedData;
+  private ConnectivityManager connectivityManager;
+  private ConnectivityManager.NetworkCallback networkCallback;
 
   /**
    * WEP has two kinds of password, a hex value that specifies the key or a character string used to
@@ -113,8 +122,8 @@ public class WifiWizard2 extends CordovaPlugin {
   @Override
   public void initialize(CordovaInterface cordova, CordovaWebView webView) {
     super.initialize(cordova, webView);
-    this.wifiManager = (WifiManager) cordova.getActivity().getApplicationContext()
-        .getSystemService(Context.WIFI_SERVICE);
+    this.wifiManager = (WifiManager) cordova.getActivity().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+    this.connectivityManager = (ConnectivityManager) cordova.getActivity().getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
   }
 
   @Override
@@ -169,6 +178,8 @@ public class WifiWizard2 extends CordovaPlugin {
     // Actions that DO require WiFi to be enabled
     if (action.equals(ADD_NETWORK)) {
       this.add(callbackContext, data);
+    } else if (action.equals(IS_CONNECTED_TO_INTERNET)) {
+      this.isConnectedToInternet(callbackContext);
     } else if (action.equals(ENABLE_NETWORK)) {
       this.enable(callbackContext, data);
     } else if (action.equals(DISABLE_NETWORK)) {
@@ -570,7 +581,7 @@ public class WifiWizard2 extends CordovaPlugin {
 
         return true;
       } else {
-        callbackContext.error("NETWORK_NOT_FOUND");
+        callbackContext.error("REMOVE_NETWORK_NOT_FOUND");
         Log.d(TAG, "WifiWizard2: Network not found, can't remove.");
         return false;
       }
@@ -740,8 +751,24 @@ public class WifiWizard2 extends CordovaPlugin {
     int networkIdToDisconnect = ssidToNetworkId(ssidToDisconnect);
 
     if (networkIdToDisconnect > 0) {
-      wifiManager.disableNetwork(networkIdToDisconnect);
-      callbackContext.success("Network " + ssidToDisconnect + " disconnected!");
+
+      if( wifiManager.disableNetwork(networkIdToDisconnect) ){
+
+        // We also remove the configuration from the device (use "disable" to keep config)
+        if( wifiManager.removeNetwork(networkIdToDisconnect) ){
+          callbackContext.success("Network " + ssidToDisconnect + " disconnected and removed!");
+        } else {
+          callbackContext.error("DISCONNECT_NET_REMOVE_ERROR");
+          Log.d(TAG, "WifiWizard2: Unable to remove network!");
+          return false;
+        }
+
+      } else {
+        callbackContext.error("DISCONNECT_NET_DISABLE_ERROR");
+        Log.d(TAG, "WifiWizard2: Unable to disable network!");
+        return false;
+      }
+
       return true;
     } else {
       callbackContext.error("DISCONNECT_NET_ID_NOT_FOUND");
@@ -1115,7 +1142,30 @@ public class WifiWizard2 extends CordovaPlugin {
       callbackContext.success();
       return true;
     } else {
-      callbackContext.error("ERROR_ENABLING_WIFI");
+      callbackContext.error("ERROR_SETWIFIENABLED");
+      return false;
+    }
+  }
+
+  /**
+   * This method enables or disables the wifi
+   */
+  private boolean isConnectedToInternet(CallbackContext callbackContext) {
+
+    try {
+
+      if( hasInternetConnection() ){
+        // Send success as 1 to return true from Promise (handled in JS)
+        callbackContext.success("1");
+        return true;
+      } else {
+        callbackContext.success("0");
+        return false;
+      }
+
+    } catch (Exception e) {
+      callbackContext.error(e.getMessage());
+      Log.d(TAG, e.getMessage());
       return false;
     }
   }
@@ -1306,6 +1356,62 @@ public class WifiWizard2 extends CordovaPlugin {
         + maxPriority);
 
     return maxPriority;
+  }
+
+  /**
+   * Check if The Device Is Connected to Internet
+   *
+   * @return true if device connect to Internet or return false if not
+   */
+  public boolean hasInternetConnection() {
+//    ConnectivityManager connectivity = (ConnectivityManager) cordova.getActivity().getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+
+    if (connectivityManager != null) {
+      NetworkInfo info = connectivityManager.getActiveNetworkInfo();
+      if (info != null) {
+        if (info.isConnected()) {
+          return pingCmd("8.8.8.8");
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Method to Ping  IP Address
+   *
+   * @param addr IP address you want to ping it
+   * @return true if the IP address is reachable
+   */
+  public boolean pingCmd(String addr) {
+
+    try {
+
+      String ping = "ping  -c 1 -W 3 " + addr;
+      Runtime run = Runtime.getRuntime();
+      Process pro = run.exec(ping);
+
+      try {
+        pro.waitFor();
+      } catch (InterruptedException e) {
+        Log.e(TAG, "InterruptedException error.", e);
+      }
+
+      int exit = pro.exitValue();
+
+      if (exit == 0) {
+        return true;
+      } else {
+        //ip address is not reachable
+        return false;
+      }
+    } catch(UnknownHostException e){
+      Log.d(TAG, "UnknownHostException: " + e.getMessage());
+    } catch (Exception e) {
+      Log.d(TAG, e.getMessage());
+    }
+
+    return false;
   }
 
   /**
