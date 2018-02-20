@@ -24,9 +24,9 @@ var WifiWizard2 = {
      * @param fail
      * @returns {boolean}
      */
-    getCurrentSSID: function (win, fail) {
+    getConnectedSSID: function (win, fail) {
         if (typeof win != "function") {
-            this.maybeCallFail( "getCurrentSSID first parameter must be a function to handle SSID.", fail );
+            this.maybeCallFail( "getConnectedSSID first parameter must be a function to handle SSID.", fail );
             return false;
         }
         cordova.exec(win, fail, "WifiWizard2", "getConnectedSSID", []);
@@ -37,9 +37,9 @@ var WifiWizard2 = {
      * @param fail
      * @returns {boolean}
      */
-    getCurrentBSSID: function (win, fail) {
+    getConnectedBSSID: function (win, fail) {
         if (typeof win != "function") {
-            this.maybeCallFail("getCurrentSSID first parameter must be a function to handle BSSID.", fail);
+            this.maybeCallFail("getConnectedBSSID first parameter must be a function to handle BSSID.", fail);
             return false;
         }
         cordova.exec(win, fail, "WifiWizard2", "getConnectedBSSID", []);
