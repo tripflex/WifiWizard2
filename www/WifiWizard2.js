@@ -111,13 +111,14 @@ var WifiWizard2 = {
    * Connect network with specified SSID
 	 *
 	 * This method will first add the wifi configuration, then enable the network, returning promise when connection is verified.
-	 * 
+	 *
    * @param {string|int} [SSID]
+	 * @param {boolean} [bindAll=false]			Whether or not to bind all connections from app, through WiFi connection
 	 * @param {string} [password=]
 	 * @param {string} [algorithm=NONE]			WPA, WPA (for WPA2), WEP or NONE (NONE by default)
    * @returns {Promise<any>}
    */
-  connect: function (SSID, password, algorithm ) {
+  connect: function ( SSID, bindAll, password, algorithm ) {
     return new Promise( function( resolve, reject ){
 
       if( ! SSID ){
@@ -126,6 +127,7 @@ var WifiWizard2 = {
       }
 
       var wifiConfig = WifiWizard2.formatWifiConfig( SSID, password, algorithm );
+      bindAll = bindAll ? true : false;
 
       if( ! wifiConfig ){
         reject( 'Algorithm incorrect');
@@ -135,7 +137,7 @@ var WifiWizard2 = {
       WifiWizard2.add( wifiConfig ).then( function( newNetID ){
 
         // Successfully updated or added wifiConfig
-        cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID)]);
+        cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID), bindAll]);
 
         // Catch error adding/updating network
       }).catch( function(error){
@@ -146,7 +148,7 @@ var WifiWizard2 = {
 
           // This error above should only be returned when the add method was able to pull a network ID (as it tries to update instead of adding)
           // Lets go ahead and attempt to connect to that SSID (using the existing wifi configuration)
-          cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID)]);
+          cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID), bindAll]);
 
         } else {
 
@@ -183,11 +185,15 @@ var WifiWizard2 = {
 	/**
 	 * Enable Network
 	 * @param {string|int} [SSID]
+	 * @param {boolean} [bindAll=false]							Whether or not to bind all network requests to this wifi network
+	 * @param {boolean} [waitForConnection=false]		Whether or not to wait before resolving promise until connection to wifi is verified
 	 * @returns {Promise<any>}
 	 */
-	enable: function( SSID ){
+	enable: function( SSID, bindAll, waitForConnection ){
 		return new Promise(function(resolve, reject) {
-			cordova.exec(resolve, reject, "WifiWizard2", "enable", [WifiWizard2.formatWifiString(SSID)]);
+			bindAll = bindAll ? true : false;
+      waitForConnection = waitForConnection ? true : false;
+			cordova.exec(resolve, reject, "WifiWizard2", "enable", [WifiWizard2.formatWifiString(SSID), bindAll, waitForConnection]);
 		});
 	},
 
@@ -313,6 +319,15 @@ var WifiWizard2 = {
 	},
 
   /**
+	 * Get Wifi Router IP from DHCP
+   * @returns {Promise<any>}
+   */
+  getWifiRouterIP: function(){
+    return new Promise( function( resolve, reject ){
+      cordova.exec(resolve, reject, "WifiWizard2", "getWifiRouterIP", []);
+    });
+  },
+  /**
 	 * Get Wifi IP
    * @returns {Promise<any>}
    */
@@ -385,9 +400,39 @@ var WifiWizard2 = {
           // Cordova can only return strings to JS, and the underlying plugin
           // sends a "1" for true and "0" for false.
           function (result) {
-            resolve(result == "1");
+
+            if( result == "1" ){
+              resolve("IS_CONNECTED_TO_INTERNET");
+            } else {
+              reject("NOT_CONNECTED_TO_INTERNET");
+            }
+
           },
           reject, "WifiWizard2", "isConnectedToInternet", []
+      );
+
+    });
+	},
+	/**
+	 * Check if we can ping current WiFi router IP address
+	 * @returns {Promise<any>}
+	 */
+  canPingWifiRouter: function () {
+		return new Promise( function( resolve, reject ){
+
+      cordova.exec(
+          // Cordova can only return strings to JS, and the underlying plugin
+          // sends a "1" for true and "0" for false.
+          function (result) {
+
+          	if( result == "1" ){
+          		resolve("CAN_PING_ROUTER");
+						} else {
+          		reject("UNABLE_TO_PING_ROUTER");
+						}
+
+          },
+          reject, "WifiWizard2", "canPingWifiRouter", []
       );
 
     });

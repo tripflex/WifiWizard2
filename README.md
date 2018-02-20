@@ -70,9 +70,11 @@ I have changed the way this works in WifiWizard2 version 3.0.0+, converting it t
 If the connect method is unable to update existing network configuration (added by user or other apps), but there is a valid network ID, it will still attempt to enable that network ID.
 
 ```javascript
-WifiWizard2.connect(ssid, password, algorithm)
+WifiWizard2.connect(ssid, bindAll, password, algorithm)
 ```
- - `ssid` should be the SSID to connect to
+ - `ssid` should be the SSID to connect to *required*
+ - `bindAll` should be set to `true` to tell Android to route all connections from your Android app, through the wifi connection (default is `false`) *optional*
+   - See `WifiWizard2.enable` for more details regarding `bindAll` feature
  - `algorithm` and `password` is not required if connecting to an open network
  - Currently `WPA` and `WEP` are only supported algorithms
  - For `WPA2` just pass `WPA` as the algorithm
@@ -206,7 +208,17 @@ WifiWizard2.isConnectedToInternet()
 
  - Returns boolean, true or false, if device is able to ping `8.8.8.8`
  - Unknown errors will still be thrown like all other async functions
- - Android Oreo + returns true even if wifi does not have internet (due to routing through cell connection, i'm working on a fix for this)
+ - If you called `connect` or `enable` and passed `true` for `bindAll`, your application will force the ping through wifi connection.
+ - If you did not pass `true` (or passed `false`) for `bindAll`, and the wifi does not have internet connection, Android Lollipop+ (API 21+) will use cell connection to ping (due to Android using cell connection when wifi does not have internet) [More Details](https://android-developers.googleblog.com/2016/07/connecting-your-app-to-wi-fi-device.html)
+
+```javascript
+WifiWizard2.canPingWifiRouter()
+```
+
+ - Returns boolean, true or false, if device is able to ping the connected WiFi router IP (obtained from DHCP info)
+ - Unknown errors will still be thrown like all other async functions
+ - This is useful for testing to make sure that your Android app is able to connect to the private network after connecting to WiFi
+ - This was added for testing the `bindAll` feature to support issues with Android Lollipop+ (API 21+) not routing calls through WiFi if WiFi does not have internet connection [See Android Blog](https://android-developers.googleblog.com/2016/07/connecting-your-app-to-wi-fi-device.html)
 
 ```javascript
 WifiWizard2.enableWifi()
@@ -220,6 +232,12 @@ WifiWizard2.disableWifi()
 WifiWizard2.getWifiIP()
 ```
  - Returns IPv4 address of currently connected WiFi, or rejects promise if IP not found or wifi not connected
+
+```javascript
+WifiWizard2.getWifiRouterIP()
+```
+ - Returns IPv4 WiFi router IP from currently connected WiFi, or rejects promise if unable to determine, or wifi not connected
+
 ##### Thrown Errors
  - `NO_VALID_IP_IDENTIFIED` if unable to determine a valid IP (ip returned from device is `0.0.0.0`)
 
@@ -276,13 +294,20 @@ WifiWizard2.requestPermission()
 
 
 ```javascript
-WifiWizard2.enable(ssid, waitForConnection)
+WifiWizard2.enable(ssid, bindAll, waitForConnection)
 ```
  - `ssid` can either be an SSID (string) or a network ID (integer)
- - `waitForConnection` should be set to `true` to only resolve promise once connection is confirmed (will wait up to 60 seconds before failing)
+ - `bindAll` should be set to `true` to tell Android to route all connections from your Android app, through the wifi connection
+    - Android Lollipop+ (API 21+) will not route connections to the WiFi device if it does not have internet connection.  Passing `true` to `bindAll` will force Android to route connections from your Android app through Wifi, regardless of internet connection.
+    - If you are having problems connecting to a local IP through WiFi because it does not have internet, try enabling `bindAll` and this should fix the problem.
+    - During my testing, some versions of Android (5.0 - 7.1.2) would still route connections through WiFi without internet, but it was random that some versions would and would not work.
+    - Testing Android Oreo+ (8.0.0+) if wifi does not have internet, 100% of the time it would NOT route connections through WiFi, so you *must* enable this for Oreo or newer to route connections from your application through wifi without internet.
+    - When `bindAll` is enabled, *ALL* connections from your app will be routed through WiFi, until you call `disconnect` or `disable`
+    - See the Google Android Blog for [More Details](https://android-developers.googleblog.com/2016/07/connecting-your-app-to-wi-fi-device.html)
+    - This feature *ONLY* works for Android Lollipop+ (API 21+), if device is running API older than 21, `bindall` will be ignored (as API older than 21 does this by default)
  - Enable the passed SSID network
  - You **MUST** call `WifiWizard2.add(wifi)` before calling `enable` as the wifi configuration must exist before you can enable it (or previously used `connect` without calling `disconnect`)
- - (TODO) This method does NOT wait or verify connection to wifi network, pass true to `waitForConnection` to only return promise once connection is verified in COMPLETED state to specific `ssid`
+ - This method does NOT wait or verify connection to wifi network, pass `true` to `waitForConnection` to only return promise once connection is verified in COMPLETED state to specific `ssid`
 
 ###### Thrown Errors
 `UNABLE_TO_ENABLE` - Android returned `-1` signifying failure enabling
@@ -360,9 +385,12 @@ Apache 2.0
 #### 3.0.0 - *TBD*
 - Completely refactored JS methods, all now return Promises
 - Added `getWifiIP` and `getWifiIPInfo` functions
+- Added `getWifiRouterIP` function
 - Changed method names to be more generalized (`connect` instead of `androidConnectNetwork`, etc)
 - Added `requestPermission` and automatic request permission when call method that requires them
 - Added `isConnectedToInternet` to ping `8.8.8.8` and verify if wifi has internet connection
+- Added `canPingWifiRouter` to ping wifi router IP obtained through DHCP information
+- Added `bindAll` feature to use `bindProcessToNetwork` for Marshmallow (API 23+) and `setProcessDefaultNetwork` for Lollipop (API 21-22) [More Details](https://android-developers.googleblog.com/2016/07/connecting-your-app-to-wi-fi-device.html)
 - Converted `connect` to helper method that calls `formatWifiConfig` then `add` then `enable`
 - Converted `disconnect` to helper method that calls `disable` then `remove`
 - Updated `add` method to set priority of added wifi to highest priority (locates max priority on existing networks and sets to +1)

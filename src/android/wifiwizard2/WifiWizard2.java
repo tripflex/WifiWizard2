@@ -33,6 +33,7 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.net.NetworkRequest;
+import android.net.DhcpInfo;
 
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiConfiguration;
@@ -79,6 +80,8 @@ public class WifiWizard2 extends CordovaPlugin {
   private static final String RECONNECT = "reconnect";
   private static final String REQUEST_FINE_LOCATION = "requestFineLocation";
   private static final String GET_WIFI_IP_ADDRESS = "getWifiIP";
+  private static final String GET_WIFI_ROUTER_IP_ADDRESS = "getWifiRouterIP";
+  private static final String CAN_PING_WIFI_ROUTER = "canPingWifiRouter";
   private static final String GET_WIFI_IP_INFO = "getWifiIPInfo";
   private static final String IS_CONNECTED_TO_INTERNET = "isConnectedToInternet";
 
@@ -92,8 +95,19 @@ public class WifiWizard2 extends CordovaPlugin {
   private WifiManager wifiManager;
   private CallbackContext callbackContext;
   private JSONArray passedData;
+
   private ConnectivityManager connectivityManager;
   private ConnectivityManager.NetworkCallback networkCallback;
+
+  // Store AP, previous, and desired wifi info
+  private AP previous, desired;
+
+  private final BroadcastReceiver networkChangedReceiver = new NetworkChangedReceiver();
+  private static final IntentFilter NETWORK_STATE_CHANGED_FILTER = new IntentFilter();
+
+  static {
+    NETWORK_STATE_CHANGED_FILTER.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
+  }
 
   /**
    * WEP has two kinds of password, a hex value that specifies the key or a character string used to
@@ -144,12 +158,23 @@ public class WifiWizard2 extends CordovaPlugin {
     } else if (action.equals(REQUEST_FINE_LOCATION)) {
       this.requestLocationPermission(LOCATION_REQUEST_CODE);
       return true;
+    } else if (action.equals(GET_WIFI_ROUTER_IP_ADDRESS)) {
+
+      String ip = getWiFiRouterIP();
+
+      if ( ip == null || ip.equals("0.0.0.0")) {
+        callbackContext.error("NO_VALID_ROUTER_IP_FOUND");
+        return true;
+      } else {
+        callbackContext.success(ip);
+        return true;
+      }
+
     } else if (action.equals(GET_WIFI_IP_ADDRESS) || action.equals(GET_WIFI_IP_INFO)) {
       String[] ipInfo = getWiFiIPAddress();
       String ip = ipInfo[0];
       String subnet = ipInfo[1];
-      String fail = "0.0.0.0";
-      if (ip == null || ip.equals(fail)) {
+      if (ip == null || ip.equals("0.0.0.0")) {
         callbackContext.error("NO_VALID_IP_IDENTIFIED");
         return true;
       }
@@ -180,6 +205,8 @@ public class WifiWizard2 extends CordovaPlugin {
       this.add(callbackContext, data);
     } else if (action.equals(IS_CONNECTED_TO_INTERNET)) {
       this.isConnectedToInternet(callbackContext);
+    } else if (action.equals(CAN_PING_WIFI_ROUTER)) {
+      this.canPingWifiRouter(callbackContext);
     } else if (action.equals(ENABLE_NETWORK)) {
       this.enable(callbackContext, data);
     } else if (action.equals(DISABLE_NETWORK)) {
@@ -456,9 +483,13 @@ public class WifiWizard2 extends CordovaPlugin {
     }
 
     String ssidToEnable = "";
+    String bindAll = "false";
+    String waitForConnection = "false";
 
     try {
       ssidToEnable = data.getString(0);
+      bindAll = data.getString(1);
+      waitForConnection = data.getString(2);
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
       Log.d(TAG, e.getMessage());
@@ -469,15 +500,30 @@ public class WifiWizard2 extends CordovaPlugin {
 
     try {
 
-      if (networkIdToEnable >= 0) {
+      if (networkIdToEnable > -1) {
 
         Log.d(TAG, "Valid networkIdToEnable: attempting connection");
-        wifiManager.enableNetwork(networkIdToEnable, true); // TODO: switch to IF statement
-        callbackContext.success("Network enabled");
-        return true;
+
+        // Bind all requests to WiFi network (only necessary for Lollipop+ - API 21+)
+        if( bindAll.equals("true") ){
+          registerBindALL(networkIdToEnable);
+        }
+
+        if( wifiManager.enableNetwork(networkIdToEnable, true) ){
+
+          if( waitForConnection.equals("true") ){
+            callbackContext.success("NETWORK_ENABLED");
+            return true;
+          } else {
+            return waitForConnection(callbackContext, networkIdToEnable);
+          }
+
+        } else {
+          callbackContext.error("ERROR_ENABLING_NETWORK");
+          return false;
+        }
 
       } else {
-
         callbackContext.error("UNABLE_TO_ENABLE");
         return false;
       }
@@ -499,6 +545,7 @@ public class WifiWizard2 extends CordovaPlugin {
    */
   private boolean disable(CallbackContext callbackContext, JSONArray data) {
     Log.d(TAG, "WifiWizard2: disable entered.");
+
     if (!validateData(data)) {
       callbackContext.error("DISABLE_INVALID_DATA");
       Log.d(TAG, "WifiWizard2: disable invalid data");
@@ -521,6 +568,7 @@ public class WifiWizard2 extends CordovaPlugin {
 
       if (networkIdToDisconnect > 0) {
         if( wifiManager.disableNetwork(networkIdToDisconnect) ){
+          maybeResetBindALL();
           callbackContext.success("Network " + ssidToDisable + " disabled!");
         } else {
           callbackContext.error("UNABLE_TO_DISABLE");
@@ -563,7 +611,7 @@ public class WifiWizard2 extends CordovaPlugin {
 
       int networkIdToRemove = ssidToNetworkId(ssidToDisconnect);
 
-      if (networkIdToRemove >= 0) {
+      if (networkIdToRemove > -1) {
 
           if( wifiManager.removeNetwork(networkIdToRemove) ){
 
@@ -572,7 +620,7 @@ public class WifiWizard2 extends CordovaPlugin {
                   wifiManager.saveConfiguration();
               }
 
-              callbackContext.success("Network removed.");
+              callbackContext.success("NETWORK_REMOVED");
 
           } else {
 
@@ -593,38 +641,6 @@ public class WifiWizard2 extends CordovaPlugin {
   }
 
   /**
-   * Get Network ID from SSID
-   *
-   * @param callbackContext A Cordova callback context
-   * @param data JSON Array, with [0] being SSID to connect
-   * @return true if network connected, false if failed
-   */
-  private boolean getSSIDNetworkID(CallbackContext callbackContext, JSONArray data) {
-    Log.d(TAG, "WifiWizard2: getSSIDNetworkID entered.");
-
-    if (!validateData(data)) {
-      callbackContext.error("GET_SSID_INVALID_DATA");
-      Log.d(TAG, "WifiWizard2: getSSIDNetworkID invalid data.");
-      return false;
-    }
-
-    String ssidToGetNetworkID = "";
-
-    try {
-      ssidToGetNetworkID = data.getString(0);
-    } catch (Exception e) {
-      callbackContext.error(e.getMessage());
-      Log.d(TAG, e.getMessage());
-      return false;
-    }
-
-    int networkIdToConnect = ssidToNetworkId(ssidToGetNetworkID);
-    callbackContext.success(networkIdToConnect);
-
-    return true;
-  }
-
-  /**
    * This method connects a network.
    *
    * @param callbackContext A Cordova callback context
@@ -641,9 +657,11 @@ public class WifiWizard2 extends CordovaPlugin {
     }
 
     String ssidToConnect = "";
+    String bindAll = "false";
 
     try {
       ssidToConnect = data.getString(0);
+      bindAll = data.getString(1);
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
       Log.d(TAG, e.getMessage());
@@ -652,19 +670,16 @@ public class WifiWizard2 extends CordovaPlugin {
 
     int networkIdToConnect = ssidToNetworkId(ssidToConnect);
 
-    // Attempt to get currently connected network ID
-    int networkIdToDisable = getConnectedNetId();
-
-    // If not currently connected to a a wifi network, use network id we want to connect to for disable
-    if (networkIdToDisable == -1) {
-      networkIdToDisable = networkIdToConnect;
-    }
-
-    if (networkIdToConnect >= 0) {
+    if (networkIdToConnect > -1) {
       // We disable the network before connecting, because if this was the last connection before
       // a disconnect(), this will not reconnect.
 
       Log.d(TAG, "Valid networkIdToConnect: attempting connection");
+
+      // Bind all requests to WiFi network (only necessary for Lollipop+ - API 21+)
+      if( bindAll.equals("true") ){
+        registerBindALL(networkIdToConnect);
+      }
 
       if (API_VERSION >= 26) {
 //                wifiManager.disconnect();
@@ -675,51 +690,66 @@ public class WifiWizard2 extends CordovaPlugin {
       wifiManager.enableNetwork(networkIdToConnect, true);
 
       if (API_VERSION >= 26) {
-        wifiManager.reassociate();
+//        wifiManager.reassociate();
       }
 
-      //
-      final int TIMES_TO_RETRY = 60;
-      for (int i = 0; i < TIMES_TO_RETRY; i++) {
-
-        WifiInfo info = wifiManager.getConnectionInfo();
-        NetworkInfo.DetailedState connectionState = info
-            .getDetailedStateOf(info.getSupplicantState());
-
-        boolean isConnected =
-            // need to ensure we're on correct network because sometimes this code is
-            // reached before the initial network has disconnected
-            info.getNetworkId() == networkIdToConnect && (
-                connectionState == NetworkInfo.DetailedState.CONNECTED ||
-                    // Android seems to sometimes get stuck in OBTAINING_IPADDR after it has received one
-                    (connectionState == NetworkInfo.DetailedState.OBTAINING_IPADDR
-                        && info.getIpAddress() != 0)
-            );
-        if (isConnected) {
-          callbackContext.success("Network " + ssidToConnect + " connected!");
-          return true;
-        }
-
-        Log.d(TAG, "WifiWizard: Got " + connectionState.name() + " on " + (i + 1) + " out of "
-            + TIMES_TO_RETRY);
-        final int ONE_SECOND = 1000;
-        try {
-          Thread.sleep(ONE_SECOND);
-        } catch (InterruptedException e) {
-          Log.e(TAG, e.getMessage());
-          callbackContext.error("INTERPUT_EXCEPT_WHILE_CONNECTING");
-          return false;
-        }
-      }
-      callbackContext.error("CONNECT_FAILED_TIMEOUT");
-      Log.d(TAG, "WifiWizard: Network failed to finish connecting within the timeout");
-      return false;
-
+      return waitForConnection(callbackContext, networkIdToConnect);
 
     } else {
       callbackContext.error("INVALID_NETWORK_ID_TO_CONNECT");
       return false;
     }
+  }
+
+  /**
+   * Wait for connection before returning error or success
+   *
+   * This method will wait up to 60 seconds for WiFi connection to specified network ID be in COMPLETED state, otherwise will return error.
+   *
+   * @param callbackContext
+   * @param networkIdToConnect
+   * @return
+   */
+  private boolean waitForConnection(CallbackContext callbackContext, int networkIdToConnect){
+
+    final int TIMES_TO_RETRY = 60;
+    for (int i = 0; i < TIMES_TO_RETRY; i++) {
+
+      WifiInfo info = wifiManager.getConnectionInfo();
+      NetworkInfo.DetailedState connectionState = info
+          .getDetailedStateOf(info.getSupplicantState());
+
+      boolean isConnected =
+          // need to ensure we're on correct network because sometimes this code is
+          // reached before the initial network has disconnected
+          info.getNetworkId() == networkIdToConnect && (
+              connectionState == NetworkInfo.DetailedState.CONNECTED ||
+                  // Android seems to sometimes get stuck in OBTAINING_IPADDR after it has received one
+                  (connectionState == NetworkInfo.DetailedState.OBTAINING_IPADDR
+                      && info.getIpAddress() != 0)
+          );
+
+      if (isConnected) {
+        callbackContext.success("NETWORK_CONNECTION_COMPLETED");
+        return true;
+      }
+
+      Log.d(TAG, "WifiWizard: Got " + connectionState.name() + " on " + (i + 1) + " out of " + TIMES_TO_RETRY);
+      final int ONE_SECOND = 1000;
+
+      try {
+        Thread.sleep(ONE_SECOND);
+      } catch (InterruptedException e) {
+        Log.e(TAG, e.getMessage());
+        callbackContext.error("INTERPUT_EXCEPT_WHILE_CONNECTING");
+        return false;
+      }
+    }
+
+    callbackContext.error("CONNECT_FAILED_TIMEOUT");
+    Log.d(TAG, "WifiWizard: Network failed to finish connecting within the timeout");
+    return false;
+
   }
 
   /**
@@ -754,6 +784,8 @@ public class WifiWizard2 extends CordovaPlugin {
 
       if( wifiManager.disableNetwork(networkIdToDisconnect) ){
 
+        maybeResetBindALL();
+
         // We also remove the configuration from the device (use "disable" to keep config)
         if( wifiManager.removeNetwork(networkIdToDisconnect) ){
           callbackContext.success("Network " + ssidToDisconnect + " disconnected and removed!");
@@ -787,6 +819,7 @@ public class WifiWizard2 extends CordovaPlugin {
     Log.d(TAG, "WifiWizard2: disconnect entered.");
 
     if (wifiManager.disconnect()) {
+      maybeResetBindALL();
       callbackContext.success("Disconnected from current network");
       return true;
     } else {
@@ -996,6 +1029,38 @@ public class WifiWizard2 extends CordovaPlugin {
   }
 
   /**
+   * Get Network ID from SSID
+   *
+   * @param callbackContext A Cordova callback context
+   * @param data JSON Array, with [0] being SSID to connect
+   * @return true if network connected, false if failed
+   */
+  private boolean getSSIDNetworkID(CallbackContext callbackContext, JSONArray data) {
+    Log.d(TAG, "WifiWizard2: getSSIDNetworkID entered.");
+
+    if (!validateData(data)) {
+      callbackContext.error("GET_SSID_INVALID_DATA");
+      Log.d(TAG, "WifiWizard2: getSSIDNetworkID invalid data.");
+      return false;
+    }
+
+    String ssidToGetNetworkID = "";
+
+    try {
+      ssidToGetNetworkID = data.getString(0);
+    } catch (Exception e) {
+      callbackContext.error(e.getMessage());
+      Log.d(TAG, e.getMessage());
+      return false;
+    }
+
+    int networkIdToConnect = ssidToNetworkId(ssidToGetNetworkID);
+    callbackContext.success(networkIdToConnect);
+
+    return true;
+  }
+
+  /**
    * This method returns the connected WiFi network ID (if connected)
    *
    * @param callbackContext A Cordova callback context
@@ -1148,13 +1213,36 @@ public class WifiWizard2 extends CordovaPlugin {
   }
 
   /**
-   * This method enables or disables the wifi
+   * Check if device is connected to Internet
    */
   private boolean isConnectedToInternet(CallbackContext callbackContext) {
 
     try {
 
       if( hasInternetConnection() ){
+        // Send success as 1 to return true from Promise (handled in JS)
+        callbackContext.success("1");
+        return true;
+      } else {
+        callbackContext.success("0");
+        return false;
+      }
+
+    } catch (Exception e) {
+      callbackContext.error(e.getMessage());
+      Log.d(TAG, e.getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Check if we can ping the WiFi Router IP
+   */
+  private boolean canPingWifiRouter(CallbackContext callbackContext) {
+
+    try {
+
+      if( hasConnectionToRouter() ){
         // Send success as 1 to return true from Promise (handled in JS)
         callbackContext.success("1");
         return true;
@@ -1227,19 +1315,12 @@ public class WifiWizard2 extends CordovaPlugin {
    * @return
    */
   private String[] getWiFiIPAddress() {
-    WifiManager wifiManager = (WifiManager) cordova.getActivity().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
     WifiInfo wifiInfo = wifiManager.getConnectionInfo();
     int ip = wifiInfo.getIpAddress();
 
-    String ipString = String.format(
-            "%d.%d.%d.%d",
-            (ip & 0xff),
-            (ip >> 8 & 0xff),
-            (ip >> 16 & 0xff),
-            (ip >> 24 & 0xff)
-    );
-
+    String ipString = formatIP(ip);
     String subnet = "";
+
     try {
         InetAddress inetAddress = InetAddress.getByName(ipString);
         subnet = getIPv4Subnet(inetAddress);
@@ -1247,6 +1328,31 @@ public class WifiWizard2 extends CordovaPlugin {
     }
 
     return new String[]{ipString, subnet};
+  }
+
+  /**
+   * Get WiFi Router IP from DHCP
+   * @return
+   */
+  private String getWiFiRouterIP() {
+    DhcpInfo dhcp = wifiManager.getDhcpInfo();
+    int ip = dhcp.gateway;
+    return formatIP(ip);
+  }
+
+  /**
+   * Format IPv4 Address
+   * @param ip
+   * @return
+   */
+  private String formatIP(int ip) {
+    return String.format(
+        "%d.%d.%d.%d",
+        (ip & 0xff),
+        (ip >> 8 & 0xff),
+        (ip >> 16 & 0xff),
+        (ip >> 24 & 0xff)
+    );
   }
 
   /**
@@ -1364,8 +1470,6 @@ public class WifiWizard2 extends CordovaPlugin {
    * @return true if device connect to Internet or return false if not
    */
   public boolean hasInternetConnection() {
-//    ConnectivityManager connectivity = (ConnectivityManager) cordova.getActivity().getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-
     if (connectivityManager != null) {
       NetworkInfo info = connectivityManager.getActiveNetworkInfo();
       if (info != null) {
@@ -1375,6 +1479,32 @@ public class WifiWizard2 extends CordovaPlugin {
       }
     }
     return false;
+  }
+
+  /**
+   * Check for connection to router by pinging router IP
+   * @return
+   */
+  public boolean hasConnectionToRouter() {
+
+    String ip = getWiFiRouterIP();
+
+    if ( ip == null || ip.equals("0.0.0.0") || connectivityManager == null) {
+
+      return false;
+
+    } else {
+
+      NetworkInfo info = connectivityManager.getActiveNetworkInfo();
+
+      if (info != null && info.isConnected()) {
+        return pingCmd(ip);
+      } else {
+        return false;
+      }
+
+    }
+
   }
 
   /**
@@ -1399,6 +1529,8 @@ public class WifiWizard2 extends CordovaPlugin {
 
       int exit = pro.exitValue();
 
+      Log.d(TAG, "pingCmd exitValue" + exit);
+
       if (exit == 0) {
         return true;
       } else {
@@ -1415,10 +1547,168 @@ public class WifiWizard2 extends CordovaPlugin {
   }
 
   /**
+   * Network Changed Broadcast Receiver
+   */
+  private class NetworkChangedReceiver extends BroadcastReceiver {
+
+    @Override
+    public void onReceive(final Context context, final Intent intent) {
+
+      if (WifiManager.NETWORK_STATE_CHANGED_ACTION.equals(intent.getAction())) {
+
+        Log.d(TAG, "NETWORK_STATE_CHANGED_ACTION");
+
+        NetworkInfo networkInfo = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
+        WifiInfo info = WifiWizard2.this.wifiManager.getConnectionInfo();
+
+        // Checks that you're connected to the desired network
+        if (networkInfo.isConnected() && info.getNetworkId() > -1) {
+
+          final String ssid = info.getSSID().replaceAll("\"", "");
+          final String bssid = info.getBSSID();
+
+          Log.d(TAG, "Connected to '" + ssid + "' @ " + bssid);
+
+          // Verify the desired network ID is what we actually connected to
+          if ( desired != null && info.getNetworkId() == desired.apId ) {
+            onSuccessfulConnection();
+          }
+
+        }
+
+      }
+
+    }
+
+  }
+
+  /**
+   * Register Receiver for Network Changed to handle BindALL
+   * @param netID
+   */
+  private void registerBindALL(int netID){
+
+    // Bind all requests to WiFi network (only necessary for Lollipop+ - API 21+)
+    if( API_VERSION > 21 ){
+      Log.d(TAG, "registerBindALL: registering net changed receiver");
+      desired = new AP(netID,null,null);
+      cordova.getActivity().getApplicationContext().registerReceiver(networkChangedReceiver, NETWORK_STATE_CHANGED_FILTER);
+    } else {
+      Log.d(TAG, "registerBindALL: API older than 21, bindall ignored.");
+    }
+  }
+
+  /**
+   * Maybe reset bind all after disconnect/disable
+   *
+   * This method unregisters the network changed receiver, as well as setting null for
+   * bindProcessToNetwork or setProcessDefaultNetwork to prevent future sockets from application
+   * being routed through Wifi.
+   */
+  private void maybeResetBindALL(){
+
+    Log.d(TAG, "maybeResetBindALL");
+
+    if( API_VERSION > 21 ){
+      // Unregister net changed receiver -- should only be registered in API versions > 21
+      cordova.getActivity().getApplicationContext().unregisterReceiver(networkChangedReceiver);
+    }
+
+    // Lollipop OS or newer
+    if ( API_VERSION >= 23 ) {
+      connectivityManager.bindProcessToNetwork(null);
+    } else if( API_VERSION >= 21 && API_VERSION < 23 ){
+      connectivityManager.setProcessDefaultNetwork(null);
+    }
+
+    if ( API_VERSION > 21 && networkCallback != null) {
+      // Same behavior as releaseNetworkRequest
+      connectivityManager.unregisterNetworkCallback(networkCallback); // Added in API 21
+    }
+
+    networkCallback = null;
+    previous = null;
+    desired = null;
+
+  }
+
+  /**
+   * Called after successful connection to WiFi when using BindAll feature
+   *
+   * This method is called by the NetworkChangedReceiver after network changed action, and confirming that we are in fact connected to wifi,
+   * and the wifi we're connected to, is the correct network set in enable, or connect.
+   */
+  private void onSuccessfulConnection() {
+    // On Lollipop+ the OS routes network requests through mobile data
+    // when phone is attached to a wifi that doesn't have Internet connection
+    // We use the ConnectivityManager to force bind all requests from our process
+    // to the wifi without internet
+    // see https://android-developers.googleblog.com/2016/07/connecting-your-app-to-wi-fi-device.html
+
+    // Marshmallow OS or newer
+    if ( API_VERSION >= 23 ) {
+
+      Log.d(TAG, "BindALL onSuccessfulConnection API >= 23");
+
+      // Marshmallow (API 23+) or newer uses bindProcessToNetwork
+      final NetworkRequest request = new NetworkRequest.Builder()
+          .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+          .build();
+
+      networkCallback = new ConnectivityManager.NetworkCallback() {
+        @Override
+        public void onAvailable(Network network) {
+          connectivityManager.bindProcessToNetwork(network);
+        }
+      };
+
+      // Only lollipop (API 21 && 22) use setProcessDefaultNetwork, API < 21 already does this by default
+    } else if( API_VERSION >= 21 && API_VERSION < 23 ){
+
+      Log.d(TAG, "BindALL onSuccessfulConnection API >= 21 && < 23");
+
+      // Lollipop (API 21-22) use setProcessDefaultNetwork (deprecated in API 23 - Marshmallow)
+      final NetworkRequest request = new NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build();
+
+      networkCallback = new ConnectivityManager.NetworkCallback() {
+        @Override
+        public void onAvailable(Network network) {
+          connectivityManager.setProcessDefaultNetwork(network);
+        }
+      };
+
+      connectivityManager.requestNetwork(request, networkCallback);
+
+    } else {
+      // Technically we should never reach this with older API, but just in case
+      Log.d(TAG, "BindALL onSuccessfulConnection API older than 21, no need to do any binding");
+      networkCallback = null;
+      previous = null;
+      desired = null;
+
+    }
+  }
+
+  /**
    * Class to store finished boolean in
    */
   private class ScanSyncContext {
 
     public boolean finished = false;
+  }
+
+  /**
+   * Used for storing access point information
+   */
+  private static class AP {
+    final String ssid, bssid;
+    final int apId;
+
+    AP(int apId, final String ssid, final String bssid) {
+      this.apId = apId;
+      this.ssid = ssid;
+      this.bssid = bssid;
+    }
+
   }
 }
