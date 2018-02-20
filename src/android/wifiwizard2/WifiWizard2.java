@@ -1609,26 +1609,30 @@ public class WifiWizard2 extends CordovaPlugin {
 
     Log.d(TAG, "maybeResetBindALL");
 
-    if( API_VERSION > 21 ){
-      // Unregister net changed receiver -- should only be registered in API versions > 21
-      cordova.getActivity().getApplicationContext().unregisterReceiver(networkChangedReceiver);
-    }
+    // desired should have a value if receiver is registered
+    if( desired != null ){
 
-    // Lollipop OS or newer
-    if ( API_VERSION >= 23 ) {
-      connectivityManager.bindProcessToNetwork(null);
-    } else if( API_VERSION >= 21 && API_VERSION < 23 ){
-      connectivityManager.setProcessDefaultNetwork(null);
-    }
+      if( API_VERSION > 21 ){
+        // Unregister net changed receiver -- should only be registered in API versions > 21
+        cordova.getActivity().getApplicationContext().unregisterReceiver(networkChangedReceiver);
+      }
 
-    if ( API_VERSION > 21 && networkCallback != null) {
-      // Same behavior as releaseNetworkRequest
-      connectivityManager.unregisterNetworkCallback(networkCallback); // Added in API 21
-    }
+      // Lollipop OS or newer
+      if ( API_VERSION >= 23 ) {
+        connectivityManager.bindProcessToNetwork(null);
+      } else if( API_VERSION >= 21 && API_VERSION < 23 ){
+        connectivityManager.setProcessDefaultNetwork(null);
+      }
 
-    networkCallback = null;
-    previous = null;
-    desired = null;
+      if ( API_VERSION > 21 && networkCallback != null) {
+        // Same behavior as releaseNetworkRequest
+        connectivityManager.unregisterNetworkCallback(networkCallback); // Added in API 21
+      }
+
+      networkCallback = null;
+      previous = null;
+      desired = null;
+    }
 
   }
 
