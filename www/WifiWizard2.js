@@ -373,7 +373,7 @@ var WifiWizard2 = {
 	 * Get currently connected network SSID
 	 * @returns {Promise<any>}
 	 */
-	getCurrentSSID: function () {
+	getConnectedSSID: function () {
 		return new Promise( function( resolve, reject ){
 			cordova.exec(resolve, reject, "WifiWizard2", "getConnectedSSID", []);
 		});
@@ -384,7 +384,7 @@ var WifiWizard2 = {
 	 * Get currently connected network BSSID/MAC
 	 * @returns {Promise<any>}
 	 */
-	getCurrentBSSID: function () {
+	getConnectedBSSID: function () {
 		return new Promise( function( resolve, reject ){
 			cordova.exec(resolve, reject, "WifiWizard2", "getConnectedBSSID", []);
 		});
