@@ -13,6 +13,13 @@ Promises are handled by the [Cordova PromisesPlugin](https://github.com/vstirbu/
 
 It is strongly recommended to use the async functions instead of callbacks, but the choice is up to you, callbacks are still supported and will remain supported for backwards compatibility.
 
+## Coming Soon
+If you are interested in using the latest and greatest, please see the [3.0.0 branch](https://github.com/tripflex/WifiWizard2/tree/3.0.0) of this project, which I recommend using over the master branch.  This includes a complete switch to promise based functions, new features, and much more to come.  Make sure you read the [README for 3.0.0 branch](https://github.com/tripflex/WifiWizard2/blob/3.0.0/README.md) if you plan on using it.
+
+After my initial fork of WifiWizard, and the push towards version 3.0.0, i've also realized that there's now a huge need for refactoring/organizing/cleaning the codebase for this project.  If anybody is interested in helping contribute to this project, please feel free to open an issue or contact me.
+
+Please check out the [Pull Request for 3.0.0](https://github.com/tripflex/WifiWizard2/pull/8) to see the latest progress and current status of everything
+
 # Global Functions
 These are functions that can be used by both Android and iOS applications
 ```javascript
