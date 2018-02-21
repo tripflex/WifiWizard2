@@ -387,17 +387,17 @@ var WifiWizard2 = {
     /**
      * Get current SSID Async
      */
-    getCurrentSSIDAsync: function () {
+    getConnectedSSIDAsync: function () {
         return new Promise(function(resolve, reject) {
-            WifiWizard2.getCurrentSSID( resolve, reject );
+            WifiWizard2.getConnectedSSID( resolve, reject );
         });
     },
     /**
      * Get current BSSID (mac) Async
      */
-    getCurrentBSSIDAsync: function () {
+    getConnectedBSSIDAsync: function () {
         return new Promise(function(resolve, reject) {
-            WifiWizard2.getCurrentBSSID( resolve, reject );
+            WifiWizard2.getConnectedBSSID( resolve, reject );
         });
     },
     /**
