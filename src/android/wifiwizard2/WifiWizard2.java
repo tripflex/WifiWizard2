@@ -1,5 +1,6 @@
 /*
  * Copyright 2018 Myles McNamara
+ * Copyright 2015 Parag Garg
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +19,10 @@ package wifiwizard2;
 import org.apache.cordova.*;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.Arrays;
 import java.lang.InterruptedException;
+import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -27,6 +31,7 @@ import org.json.JSONObject;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiConfiguration;
@@ -37,6 +42,9 @@ import android.net.wifi.SupplicantState;
 import android.content.Context;
 import android.util.Log;
 import android.os.Build.VERSION;
+import android.os.Build;
+import android.location.LocationManager;
+import android.Manifest;
 
 
 public class WifiWizard2 extends CordovaPlugin {
@@ -87,6 +95,16 @@ public class WifiWizard2 extends CordovaPlugin {
         if( ! wifiIsEnabled ) {
             callbackContext.error("Wifi is not enabled.");
             return true; // Even though enable wifi failed, we still return true and handle error in callback
+        }
+
+        if(!displayLocationSettingsRequest()){
+            callbackContext.error("Android 6 and above Gps turned off");
+            return true;
+        }
+
+        if(!checkCurrentPermissions()){
+            callbackContext.error("permission not found") ;
+            return true;
         }
 
         // Actions that DO require WiFi to be enabled
@@ -194,6 +212,100 @@ public class WifiWizard2 extends CordovaPlugin {
         }
 
     }
+
+	private boolean displayLocationSettingsRequest() {
+		Context context=this.cordova.getActivity().getApplicationContext();
+
+		LocationManager lm = (LocationManager)context.getSystemService(Context.LOCATION_SERVICE);
+		boolean gps_enabled = false;
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+
+			try {
+				gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+
+			} catch(Exception ex) {
+
+			}
+		}else{
+			return true;
+		}
+		return gps_enabled;
+	}
+
+	public boolean checkCurrentPermissions(){
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !thasPermission(this,Manifest.permission.ACCESS_COARSE_LOCATION)) {
+			trequestPermissions(this,1,new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION});
+			return false;
+		}
+		else return true;
+	}
+
+	public static void trequestPermissions(CordovaPlugin plugin, int requestCode, String[] permissions) {
+		try {
+			Method requestPermission = CordovaInterface.class.getDeclaredMethod(
+					"requestPermissions", CordovaPlugin.class, int.class, String[].class);
+
+			// If there is no exception, then this is cordova-android 5.0.0+
+			requestPermission.invoke(plugin.cordova, plugin, requestCode, permissions);
+		} catch (NoSuchMethodException noSuchMethodException) {
+			// cordova-android version is less than 5.0.0, so permission is implicitly granted
+			LOG.d(TAG, "No need to request permissions " + Arrays.toString(permissions));
+
+			// Notify the plugin that all were granted by using more reflection
+			deliverPermissionResult(plugin, requestCode, permissions);
+		} catch (IllegalAccessException illegalAccessException) {
+			// Should never be caught; this is a public method
+			LOG.e(TAG, "IllegalAccessException when requesting permissions " + Arrays.toString(permissions), illegalAccessException);
+		} catch(InvocationTargetException invocationTargetException) {
+			// This method does not throw any exceptions, so this should never be caught
+			LOG.e(TAG, "invocationTargetException when requesting permissions " + Arrays.toString(permissions), invocationTargetException);
+		}
+	}
+
+	public static boolean thasPermission(CordovaPlugin plugin, String permission) {
+		try {
+			Method hasPermission = CordovaInterface.class.getDeclaredMethod("hasPermission", String.class);
+
+			// If there is no exception, then this is cordova-android 5.0.0+
+			return (Boolean) hasPermission.invoke(plugin.cordova, permission);
+		} catch (NoSuchMethodException noSuchMethodException) {
+			// cordova-android version is less than 5.0.0, so permission is implicitly granted
+			LOG.d(TAG, "No need to check for permission " + permission);
+			return true;
+		} catch (IllegalAccessException illegalAccessException) {
+			// Should never be caught; this is a public method
+			LOG.e(TAG, "IllegalAccessException when checking permission " + permission, illegalAccessException);
+		} catch(InvocationTargetException invocationTargetException) {
+			// This method does not throw any exceptions, so this should never be caught
+			LOG.e(TAG, "invocationTargetException when checking permission " + permission, invocationTargetException);
+		}
+		return false;
+	}
+
+	private static void deliverPermissionResult(CordovaPlugin plugin, int requestCode, String[] permissions) {
+		// Generate the request results
+		int[] requestResults = new int[permissions.length];
+		Arrays.fill(requestResults, PackageManager.PERMISSION_GRANTED);
+
+		try {
+			Method onRequestPermissionResult = CordovaPlugin.class.getDeclaredMethod(
+					"onRequestPermissionResult", int.class, String[].class, int[].class);
+
+			onRequestPermissionResult.invoke(plugin, requestCode, permissions, requestResults);
+		} catch (NoSuchMethodException noSuchMethodException) {
+			// Should never be caught since the plugin must be written for cordova-android 5.0.0+ if it
+			// made it to this point
+			LOG.e(TAG, "NoSuchMethodException when delivering permissions results", noSuchMethodException);
+		} catch (IllegalAccessException illegalAccessException) {
+			// Should never be caught; this is a public method
+			LOG.e(TAG, "IllegalAccessException when delivering permissions results", illegalAccessException);
+		} catch(InvocationTargetException invocationTargetException) {
+			// This method may throw a JSONException. We are just duplicating cordova-android's
+			// exception handling behavior here; all it does is log the exception in CordovaActivity,
+			// print the stacktrace, and ignore it
+			LOG.e(TAG, "InvocationTargetException when delivering permissions results", invocationTargetException);
+		}
+	}
 
     /**
      * WEP has two kinds of password, a hex value that specifies the key or
