@@ -1665,7 +1665,9 @@ public class WifiWizard2 extends CordovaPlugin {
           connectivityManager.bindProcessToNetwork(network);
         }
       };
-
+      
+      connectivityManager.requestNetwork(request, networkCallback);
+      
       // Only lollipop (API 21 && 22) use setProcessDefaultNetwork, API < 21 already does this by default
     } else if( API_VERSION >= 21 && API_VERSION < 23 ){
 
