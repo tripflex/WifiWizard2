@@ -4,7 +4,23 @@ WifiWizard2 enables Wifi management for both Android and iOS applications within
 
 This project is a fork of the [WifiWizard](https://github.com/hoerresb/WifiWizard) plugin with fixes and updates, as well as patches taken from the [Cordova Network Manager](https://github.com/arsenal942/Cordova-Network-Manager) plugin.
 
+Version 3.0.0+ has undergone a TON of changes from the original fork (version 2.0), and the majority of method/functions have been changed.  You can find the latest release of version 2 on the [2.1.x branch](https://github.com/tripflex/WifiWizard2/tree/2.1.x)
+
+The recommended version to use is the latest 3+ as that is the version that is actively maintained.
+
 *iOS has limited functionality as Apple's WifiManager equivalent is only available  as a private API. Any app that used these features would not be allowed on the app store.*
+
+## Basics
+
+This plugin creates the object `WifiWizard2` and is accessible after `deviceready` has been fired, see [Cordova deviceready Event Docs](https://cordova.apache.org/docs/en/latest/cordova/events/events.html#deviceready)
+
+```js
+document.addEventListener('deviceready', function () {
+    // Call some WifiWizard2.method after deviceready fired
+}, false);
+```
+
+This is really only necessary if you plan on immediately invoking one of this plugin's methods/functions, as the majority of the time you would probably just call the method/function on say, a button click to scan for networks, etc.  Basically if you are going to call something immediately when a webview is shown, make sure to add the event listener for `deviceready` before making that call, otherwise you probably don't need to.
 
 ## Async Handling
 Because Cordova `exec` calls are made asynchronously, all methods/functions return async promises.  These functions will return the results, or a JavaScript error.  You should use `await` and `try/catch` blocks (or `.then` and `.catch`).  See below for more details, and examples.
@@ -335,7 +351,10 @@ WifiWizard2.timeout(4000).then( function(){
 ### Installation
 
 ##### Master
-Run ```cordova plugin add https://github.com/tripflex/wifiwizard2``` 
+
+To add this specific branch, 3.0.0:
+
+Run ```cordova plugin add https://github.com/tripflex/wifiwizard2.git#3.0.0```
 
 This plugin is in active development. If you are wanting to have the latest and greatest stable version, then run the 'Releases' command below.
 
