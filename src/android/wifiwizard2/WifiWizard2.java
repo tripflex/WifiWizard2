@@ -1613,8 +1613,12 @@ public class WifiWizard2 extends CordovaPlugin {
     if( desired != null ){
 
       if( API_VERSION > 21 ){
-        // Unregister net changed receiver -- should only be registered in API versions > 21
-        cordova.getActivity().getApplicationContext().unregisterReceiver(networkChangedReceiver);
+
+        try {
+          // Unregister net changed receiver -- should only be registered in API versions > 21
+          cordova.getActivity().getApplicationContext().unregisterReceiver(networkChangedReceiver);
+        } catch (Exception e) {}
+
       }
 
       // Lollipop OS or newer
@@ -1625,13 +1629,17 @@ public class WifiWizard2 extends CordovaPlugin {
       }
 
       if ( API_VERSION > 21 && networkCallback != null) {
-        // Same behavior as releaseNetworkRequest
-        connectivityManager.unregisterNetworkCallback(networkCallback); // Added in API 21
+
+        try {
+          // Same behavior as releaseNetworkRequest
+          connectivityManager.unregisterNetworkCallback(networkCallback); // Added in API 21
+        } catch (Exception e) {}
       }
 
       networkCallback = null;
       previous = null;
       desired = null;
+
     }
 
   }
@@ -1657,14 +1665,21 @@ public class WifiWizard2 extends CordovaPlugin {
       // Marshmallow (API 23+) or newer uses bindProcessToNetwork
       final NetworkRequest request = new NetworkRequest.Builder()
           .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+//          .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
           .build();
 
       networkCallback = new ConnectivityManager.NetworkCallback() {
         @Override
         public void onAvailable(Network network) {
-          connectivityManager.bindProcessToNetwork(network);
+          if( connectivityManager.bindProcessToNetwork(network) ){
+            Log.d(TAG, "bindProcessToNetwork TRUE onSuccessfulConnection");
+          } else {
+            Log.d(TAG, "bindProcessToNetwork FALSE onSuccessfulConnection");
+          }
         }
       };
+
+      connectivityManager.requestNetwork(request, networkCallback);
 
       // Only lollipop (API 21 && 22) use setProcessDefaultNetwork, API < 21 already does this by default
     } else if( API_VERSION >= 21 && API_VERSION < 23 ){
@@ -1672,7 +1687,10 @@ public class WifiWizard2 extends CordovaPlugin {
       Log.d(TAG, "BindALL onSuccessfulConnection API >= 21 && < 23");
 
       // Lollipop (API 21-22) use setProcessDefaultNetwork (deprecated in API 23 - Marshmallow)
-      final NetworkRequest request = new NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build();
+      final NetworkRequest request = new NetworkRequest.Builder()
+          .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+//          .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+          .build();
 
       networkCallback = new ConnectivityManager.NetworkCallback() {
         @Override
