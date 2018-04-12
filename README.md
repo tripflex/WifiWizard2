@@ -6,19 +6,16 @@ This project is a fork of the [WifiWizard](https://github.com/hoerresb/WifiWizar
 
 *iOS has limited functionality as Apple's WifiManager equivalent is only available  as a private API. Any app that used these features would not be allowed on the app store.*
 
+## 2.1.x No Longer Supported/Maintained
+
+Version 2.1.x of this plugin is no longer supported or maintained (but pull requests are welcomed), as this plugin has progressed to version 3.x.x+ since the origin fork.  This includes a complete switch to promise based functions, new features, and much more to come.
+
 ## Async Handling
 Because Cordova `exec` calls are made asynchronously, there are helper functions you can call for each function, by appending `Async` to the end of the function name.  Those functions will return the results, or a JavaScript error.  You should use `await` and `try/catch` blocks.  See below for more details, and examples.
 
-Promises are handled by the [Cordova PromisesPlugin](https://github.com/vstirbu/PromisesPlugin) as an ES6 polyfill if your application does not already define `window.Promise` 
+Promises are handled by the [Cordova PromisesPlugin](https://github.com/vstirbu/PromisesPlugin) as an ES6 polyfill if your application does not already define `window.Promise`
 
 It is strongly recommended to use the async functions instead of callbacks, but the choice is up to you, callbacks are still supported and will remain supported for backwards compatibility.
-
-## Coming Soon
-If you are interested in using the latest and greatest, please see the [3.0.0 branch](https://github.com/tripflex/WifiWizard2/tree/3.0.0) of this project, which I recommend using over the master branch.  This includes a complete switch to promise based functions, new features, and much more to come.  Make sure you read the [README for 3.0.0 branch](https://github.com/tripflex/WifiWizard2/blob/3.0.0/README.md) if you plan on using it.
-
-After my initial fork of WifiWizard, and the push towards version 3.0.0, i've also realized that there's now a huge need for refactoring/organizing/cleaning the codebase for this project.  If anybody is interested in helping contribute to this project, please feel free to open an issue or contact me.
-
-Please check out the [Pull Request for 3.0.0](https://github.com/tripflex/WifiWizard2/pull/8) to see the latest progress and current status of everything
 
 # Global Functions
 These are functions that can be used by both Android and iOS applications
@@ -65,7 +62,7 @@ WifiWizard2.iOSDisconnectNetworkAsync(ssid)
 ```
 
 # Android Functions
- - Based off the original [WifiWizard](https://github.com/hoerresb/WifiWizard) however will undergo a rework. 
+ - Based off the original [WifiWizard](https://github.com/hoerresb/WifiWizard) however will undergo a rework.
  - **WifiWizard2** *will automagically try to enable WiFi if it's disabled when calling any android related methods that require WiFi to be enabled*
 
 ```javascript
@@ -75,7 +72,7 @@ WifiWizard2.androidConnectNetwork(ssid, success, fail)
 WifiWizard2.androidConnectNetworkAsync(ssid)
 ```
  - WifiWizard will automatically disable/disconnect from currently connected networks to connect to SSID passed
- 
+
 ```javascript
 WifiWizard2.androidDisconnectNetwork(ssid, success, fail)
 ```
@@ -134,7 +131,7 @@ networks = [
     }
 ]
 ```
-An options object may be passed. Currently, the only supported option is `numLevels`, and it has the following behavior: 
+An options object may be passed. Currently, the only supported option is `numLevels`, and it has the following behavior:
 
 - if `(n == true || n < 2)`, `*.getScanResults({numLevels: n})` will return data as before, split in 5 levels;
 - if `(n > 1)`, `*.getScanResults({numLevels: n})` will calculate the signal level, split in n levels;
@@ -164,8 +161,8 @@ WifiWizard2.getConnectedNetworkIDAsync()
 
 ### Installation
 
-##### Master
-Run ```cordova plugin add https://github.com/tripflex/wifiwizard2``` 
+##### 2.1.x Version
+Run ```cordova plugin add https://github.com/tripflex/wifiwizard2.git#2.1.x```
 
 This plugin is in active development. If you are wanting to have the latest and greatest stable version, then run the 'Releases' command below.
 
@@ -176,7 +173,7 @@ Run ```cordova plugin add wifiwizard2```
 To install and use this plugin in a Meteor project, you have to specify the exact version from NPM repository:
 [https://www.npmjs.com/package/wifiwizard2](https://www.npmjs.com/package/wifiwizard2)
 
-As of 1/9/2017, the latest version is 2.1.1:
+As of 1/9/2017, the latest version (2.x.x version) is 2.1.1 (3.x.x+ is the latest):
 
 ```meteor add cordova:wifiwizard2@2.1.1```
 
@@ -185,12 +182,12 @@ As of 1/9/2017, the latest version is 2.1.1:
 ##### Async WiFi Class
 
 Below is an example class you can use for connecting to WiFi networks on Android.
-  
+
 You will notice there is a `timeout` method that simulates a synchronous timeout/delay/pause, as well as calls to `SUIBlock` which is from my [Meteor Semantic UI Blocker plugin](https://github.com/tripflex/meteor-suiblocker), and is used to provide feedback to the user on their device.  That is what the `timeout` method is used for, to provide a better UI experience for the user by "slowing" down the process by "pausing" for 2 seconds (2000ms) between each call.  You can remove the timeout and calls to `SUIBlock` if you don't need them.
 
 ```javascript
 class ExampleWiFi {
-    
+
     constructor( SSID ){
         this.SSID = SSID;
         this.delay = 2000; // delay in ms for timeout
@@ -298,11 +295,11 @@ If you're not calling the class from an async function (required to use `await`)
 var wifi = new ExampleWiFi( 'my-ssid' );
 var wifiConnection = wifi.connect();
 wifiConnection.then( function( result ){
-   // Do something after connecting! 
+   // Do something after connecting!
 });
 
 wifiConnection.catch( function( error ){
-   // Oh no there was an error! 
+   // Oh no there was an error!
 });
 ```
 
@@ -373,50 +370,50 @@ Apache 2.0
 
 - Clobber WifiWizard.js automatically via Cordova plugin architecture
 
-#### v0.2.6 
+#### v0.2.6
 
 - Added `isWifiEnabled`, `setWifiEnabled`
 
-#### v0.2.5 
+#### v0.2.5
 
 - Fixes `getConnectedSSID` error handlers
 
-#### v0.2.4 
+#### v0.2.4
 
 - Added `getConnectedSSID` method
 
-#### v0.2.3 
+#### v0.2.3
 
 - Added `disconnect` that does disconnection on current WiFi
 
-#### v0.2.2 
+#### v0.2.2
 
 - Added `startScan` and `getScanResults`
 
-#### v0.2.1 
+#### v0.2.1
 
 - Fixed reference problem in `formatWPAConfig`
 
-#### v0.2.0 
+#### v0.2.0
 
 - Changed format of wifiConfiguration object to allow more extensibility.
 
-#### v0.1.1 
+#### v0.1.1
 
 - `addNetwork` will now update the network if the SSID already exists.
 
-#### v0.1.0 
+#### v0.1.0
 
 - All functions now work!
 
-#### v0.0.3 
+#### v0.0.3
 
 - Fixed errors in native implementation. Currently, Add and Remove networks aren't working, but others are working as expected.
 
-#### v0.0.2 
+#### v0.0.2
 
 - Changed plugin.xml and WifiWizard.js to attach WifiWizard directly to the HTML.
 
-#### v0.0.1 
+#### v0.0.1
 
 - Initial commit
