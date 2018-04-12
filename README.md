@@ -352,11 +352,11 @@ WifiWizard2.timeout(4000).then( function(){
 
 ##### Master
 
-To add this specific branch, 3.0.0:
+Run ```cordova plugin add https://github.com/tripflex/wifiwizard2```
 
-Run ```cordova plugin add https://github.com/tripflex/wifiwizard2.git#3.0.0```
+To install from the master branch (latest on GitHub):
 
-This plugin is in active development. If you are wanting to have the latest and greatest stable version, then run the 'Releases' command below.
+If you are wanting to have the latest and greatest stable version, then run the 'Releases' command below.
 
 ##### Releases
 Run ```cordova plugin add wifiwizard2```
@@ -365,7 +365,7 @@ Run ```cordova plugin add wifiwizard2```
 To install and use this plugin in a Meteor project, you have to specify the exact version from NPM repository:
 [https://www.npmjs.com/package/wifiwizard2](https://www.npmjs.com/package/wifiwizard2)
 
-As of 1/22/2018, the latest version is 3.0.0:
+As of 4/12/2018, the latest version is 3.0.0:
 
 ```meteor add cordova:wifiwizard2@3.0.0```
 
@@ -401,7 +401,7 @@ Apache 2.0
 
 ## Changelog:
 
-#### 3.0.0 - *TBD*
+#### 3.0.0 - April 12, 2018
 - Completely refactored JS methods, all now return Promises
 - Added `getWifiIP` and `getWifiIPInfo` functions
 - Added `getWifiRouterIP` function
@@ -416,6 +416,7 @@ Apache 2.0
 - Completely refactored and updated all documentation and examples
 - Added `ping` Android Java code for possible new methods to ping custom IP/URL (in upcoming releases)
 - Updated all error callbacks to use detectable strings (for custom error messages, instead of generic ones)
+- DO NOT upgrade from version 2.x.x without reading ENTIRE README! Method/Function names have all been changed!
 
 #### 2.1.1 - *1/9/2018*
 - **Added Async Promise based methods**
