@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    id="wifiwizard2"
-    version="2.1.1">
-  
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        id="wifiwizard2"
+        version="3.0.0">
+
     <name>WifiWizard2</name>
     <description>Cordova Wifi Manager for Android and iOS</description>
     <license>Apache 2.0</license>
@@ -13,32 +13,32 @@
     <issue>https://github.com/tripflex/wifiwizard2/issues</issue>
 
     <js-module src="www/WifiWizard2.js" name="WifiWizard2">
-      <clobbers target="window.WifiWizard2" />
+        <clobbers target="window.WifiWizard2" />
     </js-module>
 
     <!-- ES6 promise polyfill -->
     <dependency id="es6-promise-plugin" version="4.1.0" />
 
-  <!-- android -->
+    <!-- android -->
     <platform name="android">
-      
-      <config-file target="AndroidManifest.xml" parent="/manifest">
-        <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-        <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-        <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
-        <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
-        <uses-permission android:name="android.permission.INTERNET" />
-        <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-      </config-file>
-      
-      <config-file target="res/xml/config.xml" parent="/*">
-        <feature name="WifiWizard2">
-          <param name="android-package" value="wifiwizard2.WifiWizard2" />
-          <param name="onload" value="true" />
-        </feature>
-      </config-file>
 
-      <source-file src="src/android/wifiwizard2/WifiWizard2.java" target-dir="src/android/wifiwizard2" />
+        <config-file target="AndroidManifest.xml" parent="/*">
+            <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+            <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+            <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+            <uses-permission android:name="android.permission.INTERNET" />
+            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+        </config-file>
+
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="WifiWizard2">
+                <param name="android-package" value="wifiwizard2.WifiWizard2" />
+                <param name="onload" value="true" />
+            </feature>
+        </config-file>
+
+        <source-file src="src/android/wifiwizard2/WifiWizard2.java" target-dir="src/android/wifiwizard2" />
     </platform>
 
     <platform name="ios">
@@ -52,5 +52,5 @@
         <source-file src="src/ios/WifiWizard2.m" />
         <framework src="SystemConfiguration.framework" />
     </platform>
-  
+
 </plugin>
