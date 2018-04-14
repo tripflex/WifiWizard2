@@ -332,9 +332,9 @@ var WifiWizard2 = {
 	 * Bind Network
 	 * @returns {Promise<any>}
 	 */
-	setBindAll: function (netwrokId) {
+	setBindAll: function () {
 		return new Promise( function( resolve, reject ){
-			cordova.exec(resolve, reject, "WifiWizard2", "setBindALL", [netwrokId]);
+			cordova.exec(resolve, reject, "WifiWizard2", "setBindALL", []);
 		});
 	},
 

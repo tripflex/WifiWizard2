@@ -244,7 +244,7 @@ public class WifiWizard2 extends CordovaPlugin {
     } else if (action.equals(RESET_BINDALL)) {
       this.resetBindAll(callbackContext);
     } else if (action.equals(SET_BIND_ALL)) {
-      this.setBindAll(callbackContext, data);
+      this.setBindAll(callbackContext);
     } else {
       callbackContext.error("Incorrect action parameter: " + action);
       // The ONLY time to return FALSE is when action does not exist that was called
@@ -1672,21 +1672,12 @@ public class WifiWizard2 extends CordovaPlugin {
    *
    * @param callbackContext A Cordova callback context
    */
-  private void setBindAll(CallbackContext callbackContext, JSONArray data) {
+  private void setBindAll(CallbackContext callbackContext) {
     Log.d(TAG, "WifiWizard2: setBindALL");
 
-    String status = "";
-
-    try {
-      status = data.getString(0);
-    } catch (Exception e) {
-      callbackContext.error(e.getMessage());
-      Log.d(TAG, e.getMessage());
-      return false;
-    }
-	
 	try {
-		registerBindALL();
+		int networkId = getConnectedNetId();
+		registerBindALL(networkId);
 		callbackContext.success("Netwrok was bind");
 	} catch (Exception e) {
 		Log.e(TAG, "InterruptedException error.", e);
