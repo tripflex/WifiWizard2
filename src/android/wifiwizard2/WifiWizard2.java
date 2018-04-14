@@ -84,7 +84,8 @@ public class WifiWizard2 extends CordovaPlugin {
   private static final String CAN_PING_WIFI_ROUTER = "canPingWifiRouter";
   private static final String GET_WIFI_IP_INFO = "getWifiIPInfo";
   private static final String IS_CONNECTED_TO_INTERNET = "isConnectedToInternet";
-  private static final String RESET_BINDALL = "resetBindALL";
+  private static final String RESET_BINDALL = "resetBindAll";
+  private static final String SET_BIND_ALL = "setBindAll";
 
   private static final int SCAN_RESULTS_CODE = 0; // Permissions request code for getScanResults()
   private static final int SCAN_CODE = 1; // Permissions request code for scan()
@@ -241,7 +242,9 @@ public class WifiWizard2 extends CordovaPlugin {
     } else if (action.equals(GET_CONNECTED_NETWORKID)) {
       this.getConnectedNetworkID(callbackContext);
     } else if (action.equals(RESET_BINDALL)) {
-      this.resetBindALL(callbackContext);
+      this.resetBindAll(callbackContext);
+    } else if (action.equals(SET_BIND_ALL)) {
+      this.setBindAll(callbackContext, data);
     } else {
       callbackContext.error("Incorrect action parameter: " + action);
       // The ONLY time to return FALSE is when action does not exist that was called
@@ -1652,7 +1655,7 @@ public class WifiWizard2 extends CordovaPlugin {
    *
    * @param callbackContext A Cordova callback context
    */
-  private void resetBindALL(CallbackContext callbackContext) {
+  private void resetBindAll(CallbackContext callbackContext) {
     Log.d(TAG, "WifiWizard2: resetBindALL");
 
       try {
@@ -1663,6 +1666,34 @@ public class WifiWizard2 extends CordovaPlugin {
 		callbackContext.error("ERROR_NO_BIND_ALL");
       }
   }
+
+  /**
+   * This method is a wrapper for maybeResetBindALL
+   *
+   * @param callbackContext A Cordova callback context
+   */
+  private void setBindAll(CallbackContext callbackContext, JSONArray data) {
+    Log.d(TAG, "WifiWizard2: setBindALL");
+
+    String status = "";
+
+    try {
+      status = data.getString(0);
+    } catch (Exception e) {
+      callbackContext.error(e.getMessage());
+      Log.d(TAG, e.getMessage());
+      return false;
+    }
+	
+	try {
+		registerBindALL();
+		callbackContext.success("Netwrok was bind");
+	} catch (Exception e) {
+		Log.e(TAG, "InterruptedException error.", e);
+		callbackContext.error("ERROR_CANT_BIND_ALL");
+	}
+  }
+
 
 
 
