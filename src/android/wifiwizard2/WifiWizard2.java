@@ -1658,7 +1658,7 @@ public class WifiWizard2 extends CordovaPlugin {
       try {
         maybeResetBindALL();
 		callbackContext.success("Netwrok was unbind");
-      } catch (InterruptedException e) {
+      } catch (Exception e) {
         Log.e(TAG, "InterruptedException error.", e);
 		callbackContext.error("ERROR_NO_BIND_ALL");
       }
