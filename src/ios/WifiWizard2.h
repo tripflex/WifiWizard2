@@ -20,5 +20,6 @@
 - (void)getScanResults:(CDVInvokedUrlCommand*)command;
 - (void)startScan:(CDVInvokedUrlCommand*)command;
 - (void)disconnect:(CDVInvokedUrlCommand*)command;
+- (void)resetBindALL:(CDVInvokedUrlCommand*)command;
 
 @end

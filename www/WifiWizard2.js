@@ -318,6 +318,16 @@ var WifiWizard2 = {
 		});
 	},
 
+	/**
+	 * Unbind Network
+	 * @returns {Promise<any>}
+	 */
+	resetBindALL: function () {
+		return new Promise( function( resolve, reject ){
+			cordova.exec(resolve, reject, "WifiWizard2", "resetBindALL", []);
+		});
+	},
+
   /**
 	 * Get Wifi Router IP from DHCP
    * @returns {Promise<any>}
