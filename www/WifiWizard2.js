@@ -334,7 +334,7 @@ var WifiWizard2 = {
 	 */
 	setBindAll: function () {
 		return new Promise( function( resolve, reject ){
-			cordova.exec(resolve, reject, "WifiWizard2", "setBindALL", []);
+			cordova.exec(resolve, reject, "WifiWizard2", "setBindAll", []);
 		});
 	},
 
