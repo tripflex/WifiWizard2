@@ -1652,7 +1652,7 @@ public class WifiWizard2 extends CordovaPlugin {
    *
    * @param callbackContext A Cordova callback context
    */
-  private boolean resetBindALL(CallbackContext callbackContext) {
+  private void resetBindALL(CallbackContext callbackContext) {
     Log.d(TAG, "WifiWizard2: resetBindALL");
 
       try {
