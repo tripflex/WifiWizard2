@@ -353,6 +353,17 @@ WifiWizard2.timeout(4000).then( function(){
 }):
 ```
 
+```javascript
+WifiWizard2.resetBindAll()
+```
+ - Will force device to use a newtowrk with internet, Essenitally un-binding the connection.
+
+```javascript
+WifiWizard2.setBindAll()
+```
+ - Will force device to route all netwrok requests through the connected netwrok, Essenitally binding the connection.
+
+
 ### Installation
 
 ##### Master
