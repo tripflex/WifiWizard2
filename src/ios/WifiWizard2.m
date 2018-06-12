@@ -55,7 +55,7 @@
 					passphrase:passwordString 
 						isWEP:(BOOL)false];
 
-			configuration.joinOnce = YES;
+			configuration.joinOnce = NO;
 			[[NEHotspotConfigurationManager sharedManager] applyConfiguration:configuration completionHandler:nil];
 			pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:ssidString];
 		} else {
