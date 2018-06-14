@@ -710,7 +710,7 @@ public class WifiWizard2 extends CordovaPlugin {
   /**
    * Wait for connection before returning error or success
    *
-   * This method will wait up to 60 seconds for WiFi connection to specified network ID be in COMPLETED state, otherwise will return error.
+   * This method will wait up to 7 seconds for WiFi connection to specified network ID be in COMPLETED state, otherwise will return error.
    *
    * @param callbackContext
    * @param networkIdToConnect
@@ -718,7 +718,7 @@ public class WifiWizard2 extends CordovaPlugin {
    */
   private boolean waitForConnection(CallbackContext callbackContext, int networkIdToConnect){
 
-    final int TIMES_TO_RETRY = 60;
+    final int TIMES_TO_RETRY = 7;
     for (int i = 0; i < TIMES_TO_RETRY; i++) {
 
       WifiInfo info = wifiManager.getConnectionInfo();
