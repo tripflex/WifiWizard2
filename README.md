@@ -73,7 +73,7 @@ WifiWizard2.scan([options])
 For functionality, you need to note the following:
  - Connect/Disconnect only works for iOS11+
  - Can't run in the simulator so you need to attach an actual device when building with xCode
- - Need to add the 'HotspotConfiguration' and 'NetworkExtensions' capabilities to your xCode project
+ - Will add the 'HotspotConfiguration' and 'NetworkExtensions' capabilities to your xCode project
 
 ```javascript
 WifiWizard2.iOSConnectNetwork(ssid, ssidPassword)
