@@ -52,16 +52,16 @@
         <framework src="NetworkExtension.framework" />
 
 		<config-file parent="com.apple.developer.networking.HotspotConfiguration" target="*/Entitlements-Debug.plist">
-		    <dict><true/></dict>
+		    <true/>
 		</config-file>
 		<config-file parent="com.apple.developer.networking.HotspotConfiguration" target="*/Entitlements-Release.plist">
-			 <dict><true/></dict>
+			 <true/>
 		</config-file>
 		<config-file parent="com.apple.developer.networking.networkextension" target="*/Entitlements-Debug.plist">
-			<dict><array/></dict>
+			<array/>
 		</config-file>
 		<config-file parent="com.apple.developer.networking.networkextension" target="*/Entitlements-Release.plist">
-			<dict><array/></dict>
+			<array/>
 		</config-file>
 
         <header-file src="src/ios/WifiWizard2.h" />
