@@ -74,6 +74,11 @@ For functionality, you need to note the following:
  - Connect/Disconnect only works for iOS11+
  - Can't run in the simulator so you need to attach an actual device when building with xCode
  - Will add the 'HotspotConfiguration' and 'NetworkExtensions' capabilities to your xCode project
+ 
+## Important
+
+The com.apple.developer.networking.HotspotHelper entitlement is required in order to use iOSConnectNetwork (NEHotspotHelper). To request this entitlement from Apple, complete the questionnaire at https://developer.apple.com/contact/network-extension.
+
 
 ```javascript
 WifiWizard2.iOSConnectNetwork(ssid, ssidPassword)
