@@ -63,6 +63,12 @@
 		<config-file parent="com.apple.developer.networking.networkextension" target="*/Entitlements-Release.plist">
 			<array/>
 		</config-file>
+		<config-file parent="com.apple.developer.networking.HotspotHelper" target="*/Entitlements-Debug.plist">
+			<array/>
+		</config-file>
+		<config-file parent="com.apple.developer.networking.HotspotHelper" target="*/Entitlements-Release.plist">
+			<array/>
+		</config-file>
 
         <header-file src="src/ios/WifiWizard2.h" />
         <source-file src="src/ios/WifiWizard2.m" />
