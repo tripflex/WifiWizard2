@@ -38,7 +38,8 @@
 }
 
 - (void)iOSConnectNetwork:(CDVInvokedUrlCommand*)command {
-    CDVPluginResult *pluginResult = nil;
+    
+    __block CDVPluginResult *pluginResult = nil;
 
 	NSString * ssidString;
 	NSString * passwordString;
@@ -55,19 +56,37 @@
 					passphrase:passwordString 
 						isWEP:(BOOL)false];
 
-			configuration.joinOnce = YES;
-			[[NEHotspotConfigurationManager sharedManager] applyConfiguration:configuration completionHandler:nil];
-			pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:ssidString];
+			configuration.joinOnce = false;
+            
+            [[NEHotspotConfigurationManager sharedManager] applyConfiguration:configuration completionHandler:^(NSError * _Nullable error) {
+                
+                NSDictionary *r = [self fetchSSIDInfo];
+                NSString *ssid = [r objectForKey:(id)kCNNetworkInfoKeySSID]; //@"SSID"
+                
+				if ([ssid isEqualToString:ssidString]){
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:ssidString];
+                }else{
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.description];
+                }
+                [self.commandDelegate sendPluginResult:pluginResult
+                                            callbackId:command.callbackId];
+            }];
+
+
 		} else {
 			pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"SSID Not provided"];
+            [self.commandDelegate sendPluginResult:pluginResult
+                                        callbackId:command.callbackId];
 		}
 	} else {
 		pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"iOS 11+ not available"];
+        [self.commandDelegate sendPluginResult:pluginResult
+                                    callbackId:command.callbackId];
 	}
 
-    [self.commandDelegate sendPluginResult:pluginResult
-                                callbackId:command.callbackId];
+
 }
+
 
 - (void)iOSDisconnectNetwork:(CDVInvokedUrlCommand*)command {
     CDVPluginResult *pluginResult = nil;
@@ -220,6 +239,24 @@
 }
 
 - (void)disconnect:(CDVInvokedUrlCommand*)command {
+    CDVPluginResult *pluginResult = nil;
+    
+    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Not supported"];
+    
+    [self.commandDelegate sendPluginResult:pluginResult
+                                callbackId:command.callbackId];
+}
+
+- (void)resetBindALL:(CDVInvokedUrlCommand*)command {
+    CDVPluginResult *pluginResult = nil;
+    
+    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Not supported"];
+    
+    [self.commandDelegate sendPluginResult:pluginResult
+                                callbackId:command.callbackId];
+}
+
+- (void)setBindAll:(CDVInvokedUrlCommand*)command {
     CDVPluginResult *pluginResult = nil;
     
     pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Not supported"];

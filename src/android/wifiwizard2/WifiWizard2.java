@@ -84,6 +84,8 @@ public class WifiWizard2 extends CordovaPlugin {
   private static final String CAN_PING_WIFI_ROUTER = "canPingWifiRouter";
   private static final String GET_WIFI_IP_INFO = "getWifiIPInfo";
   private static final String IS_CONNECTED_TO_INTERNET = "isConnectedToInternet";
+  private static final String RESET_BINDALL = "resetBindAll";
+  private static final String SET_BIND_ALL = "setBindAll";
 
   private static final int SCAN_RESULTS_CODE = 0; // Permissions request code for getScanResults()
   private static final int SCAN_CODE = 1; // Permissions request code for scan()
@@ -239,6 +241,10 @@ public class WifiWizard2 extends CordovaPlugin {
       this.getConnectedBSSID(callbackContext);
     } else if (action.equals(GET_CONNECTED_NETWORKID)) {
       this.getConnectedNetworkID(callbackContext);
+    } else if (action.equals(RESET_BINDALL)) {
+      this.resetBindAll(callbackContext);
+    } else if (action.equals(SET_BIND_ALL)) {
+      this.setBindAll(callbackContext);
     } else {
       callbackContext.error("Incorrect action parameter: " + action);
       // The ONLY time to return FALSE is when action does not exist that was called
@@ -704,7 +710,7 @@ public class WifiWizard2 extends CordovaPlugin {
   /**
    * Wait for connection before returning error or success
    *
-   * This method will wait up to 60 seconds for WiFi connection to specified network ID be in COMPLETED state, otherwise will return error.
+   * This method will wait up to 7 seconds for WiFi connection to specified network ID be in COMPLETED state, otherwise will return error.
    *
    * @param callbackContext
    * @param networkIdToConnect
@@ -712,7 +718,7 @@ public class WifiWizard2 extends CordovaPlugin {
    */
   private boolean waitForConnection(CallbackContext callbackContext, int networkIdToConnect){
 
-    final int TIMES_TO_RETRY = 60;
+    final int TIMES_TO_RETRY = 7;
     for (int i = 0; i < TIMES_TO_RETRY; i++) {
 
       WifiInfo info = wifiManager.getConnectionInfo();
@@ -1605,7 +1611,7 @@ public class WifiWizard2 extends CordovaPlugin {
    * bindProcessToNetwork or setProcessDefaultNetwork to prevent future sockets from application
    * being routed through Wifi.
    */
-  private void maybeResetBindALL(){
+  public void maybeResetBindALL(){
 
     Log.d(TAG, "maybeResetBindALL");
 
@@ -1643,6 +1649,44 @@ public class WifiWizard2 extends CordovaPlugin {
     }
 
   }
+
+  /**
+   * This method is a wrapper for maybeResetBindALL
+   *
+   * @param callbackContext A Cordova callback context
+   */
+  private void resetBindAll(CallbackContext callbackContext) {
+    Log.d(TAG, "WifiWizard2: resetBindALL");
+
+      try {
+        maybeResetBindALL();
+		callbackContext.success("Netwrok was unbind");
+      } catch (Exception e) {
+        Log.e(TAG, "InterruptedException error.", e);
+		callbackContext.error("ERROR_NO_BIND_ALL");
+      }
+  }
+
+  /**
+   * This method is a wrapper for maybeResetBindALL
+   *
+   * @param callbackContext A Cordova callback context
+   */
+  private void setBindAll(CallbackContext callbackContext) {
+    Log.d(TAG, "WifiWizard2: setBindALL");
+
+	try {
+		int networkId = getConnectedNetId();
+		registerBindALL(networkId);
+		callbackContext.success("Netwrok was bind");
+	} catch (Exception e) {
+		Log.e(TAG, "InterruptedException error.", e);
+		callbackContext.error("ERROR_CANT_BIND_ALL");
+	}
+  }
+
+
+
 
   /**
    * Called after successful connection to WiFi when using BindAll feature
