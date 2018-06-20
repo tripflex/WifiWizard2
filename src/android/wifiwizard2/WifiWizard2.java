@@ -348,22 +348,27 @@ public class WifiWizard2 extends CordovaPlugin {
     WifiConfiguration wifi = new WifiConfiguration();
 
     try {
-      // data's order for ANY object is 0: ssid, 1: authentication algorithm,
-      // 2+: authentication information.
+      // data's order for ANY object is
+      // 0: SSID
+      // 1: authentication algorithm,
+      // 2: authentication information
+      // 3: whether or not the SSID is hidden
+      String newSSID = data.getString(0);
       String authType = data.getString(1);
+      String newPass = data.getString(2);
+      boolean isHiddenSSID = data.getBoolean(3);
 
-      /**
-       * WPA Data format:
-       * 0: ssid
-       * 1: auth
-       * 2: password
-       */
+      wifi.hiddenSSID = isHiddenSSID;
 
       if (authType.equals("WPA") || authType.equals("WPA2")) {
-        // WPA/WPA2 NETWORK
-        String newSSID = data.getString(0);
+       /**
+        * WPA Data format:
+        * 0: ssid
+        * 1: auth
+        * 2: password
+        * 3: isHiddenSSID
+        */
         wifi.SSID = newSSID;
-        String newPass = data.getString(2);
         wifi.preSharedKey = newPass;
 
         wifi.status = WifiConfiguration.Status.ENABLED;
@@ -378,14 +383,14 @@ public class WifiWizard2 extends CordovaPlugin {
         wifi.networkId = ssidToNetworkId(newSSID);
 
       } else if (authType.equals("WEP")) {
-        // WEP NETWORK
-        // WEP Data format:
-        // 0: ssid
-        // 1: auth
-        // 2: password
-        String newSSID = data.getString(0);
+       /**
+        * WEP Data format:
+        * 0: ssid
+        * 1: auth
+        * 2: password
+        * 3: isHiddenSSID
+        */
         wifi.SSID = newSSID;
-        String newPass = data.getString(2);
 
         if (getHexKey(newPass)) {
           wifi.wepKeys[0] = newPass;
@@ -410,8 +415,13 @@ public class WifiWizard2 extends CordovaPlugin {
         wifi.networkId = ssidToNetworkId(newSSID);
 
       } else if (authType.equals("NONE")) {
-        // OPEN NETWORK
-        String newSSID = data.getString(0);
+       /**
+        * OPEN Network data format:
+        * 0: ssid
+        * 1: auth
+        * 2: <not used>
+        * 3: isHiddenSSID
+        */
         wifi.SSID = newSSID;
         wifi.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
         wifi.networkId = ssidToNetworkId(newSSID);
