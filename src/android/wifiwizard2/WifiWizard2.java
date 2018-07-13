@@ -44,6 +44,7 @@ import android.net.wifi.SupplicantState;
 import android.net.ConnectivityManager;
 
 import android.content.Context;
+import android.os.AsyncTask;
 import android.util.Log;
 import android.os.Build.VERSION;
 
@@ -53,6 +54,8 @@ import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 
 import java.net.UnknownHostException;
+
+import jdk.nashorn.internal.codegen.CompilerConstants;
 
 public class WifiWizard2 extends CordovaPlugin {
 
@@ -471,15 +474,14 @@ public class WifiWizard2 extends CordovaPlugin {
    *
    * @param callbackContext A Cordova callback context
    * @param data JSON Array, with [0] being SSID to connect
-   * @return true if network connected, false if failed
    */
-  private boolean enable(CallbackContext callbackContext, JSONArray data) {
+  private void enable(CallbackContext callbackContext, JSONArray data) {
     Log.d(TAG, "WifiWizard2: enable entered.");
 
     if (!validateData(data)) {
       callbackContext.error("ENABLE_INVALID_DATA");
       Log.d(TAG, "WifiWizard2: enable invalid data.");
-      return false;
+      return;
     }
 
     String ssidToEnable = "";
@@ -493,7 +495,7 @@ public class WifiWizard2 extends CordovaPlugin {
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
       Log.d(TAG, e.getMessage());
-      return false;
+      return;
     }
 
     int networkIdToEnable = ssidToNetworkId(ssidToEnable);
@@ -513,25 +515,26 @@ public class WifiWizard2 extends CordovaPlugin {
 
           if( waitForConnection.equals("true") ){
             callbackContext.success("NETWORK_ENABLED");
-            return true;
+            return;
           } else {
-            return waitForConnection(callbackContext, networkIdToEnable);
+            new ConnectAsync().execute(callbackContext, networkIdToEnable);
+            return;
           }
 
         } else {
           callbackContext.error("ERROR_ENABLING_NETWORK");
-          return false;
+          return;
         }
 
       } else {
         callbackContext.error("UNABLE_TO_ENABLE");
-        return false;
+        return;
       }
 
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
       Log.d(TAG, e.getMessage());
-      return false;
+      return;
     }
 
   }
@@ -645,15 +648,14 @@ public class WifiWizard2 extends CordovaPlugin {
    *
    * @param callbackContext A Cordova callback context
    * @param data JSON Array, with [0] being SSID to connect
-   * @return true if network connected, false if failed
    */
-  private boolean connect(CallbackContext callbackContext, JSONArray data) {
+  private void connect(CallbackContext callbackContext, JSONArray data) {
     Log.d(TAG, "WifiWizard2: connect entered.");
 
     if (!validateData(data)) {
       callbackContext.error("CONNECT_INVALID_DATA");
       Log.d(TAG, "WifiWizard2: connect invalid data.");
-      return false;
+      return;
     }
 
     String ssidToConnect = "";
@@ -665,7 +667,7 @@ public class WifiWizard2 extends CordovaPlugin {
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
       Log.d(TAG, e.getMessage());
-      return false;
+      return;
     }
 
     int networkIdToConnect = ssidToNetworkId(ssidToConnect);
@@ -693,11 +695,12 @@ public class WifiWizard2 extends CordovaPlugin {
 //        wifiManager.reassociate();
       }
 
-      return waitForConnection(callbackContext, networkIdToConnect);
+      new ConnectAsync().execute(callbackContext, networkIdToConnect);
+      return;
 
     } else {
       callbackContext.error("INVALID_NETWORK_ID_TO_CONNECT");
-      return false;
+      return;
     }
   }
 
@@ -710,46 +713,59 @@ public class WifiWizard2 extends CordovaPlugin {
    * @param networkIdToConnect
    * @return
    */
-  private boolean waitForConnection(CallbackContext callbackContext, int networkIdToConnect){
 
-    final int TIMES_TO_RETRY = 60;
-    for (int i = 0; i < TIMES_TO_RETRY; i++) {
-
-      WifiInfo info = wifiManager.getConnectionInfo();
-      NetworkInfo.DetailedState connectionState = info
-          .getDetailedStateOf(info.getSupplicantState());
-
-      boolean isConnected =
-          // need to ensure we're on correct network because sometimes this code is
-          // reached before the initial network has disconnected
-          info.getNetworkId() == networkIdToConnect && (
-              connectionState == NetworkInfo.DetailedState.CONNECTED ||
-                  // Android seems to sometimes get stuck in OBTAINING_IPADDR after it has received one
-                  (connectionState == NetworkInfo.DetailedState.OBTAINING_IPADDR
-                      && info.getIpAddress() != 0)
-          );
-
-      if (isConnected) {
-        callbackContext.success("NETWORK_CONNECTION_COMPLETED");
-        return true;
-      }
-
-      Log.d(TAG, "WifiWizard: Got " + connectionState.name() + " on " + (i + 1) + " out of " + TIMES_TO_RETRY);
-      final int ONE_SECOND = 1000;
-
-      try {
-        Thread.sleep(ONE_SECOND);
-      } catch (InterruptedException e) {
-        Log.e(TAG, e.getMessage());
-        callbackContext.error("INTERPUT_EXCEPT_WHILE_CONNECTING");
-        return false;
+  private class ConnectAsync extends AsyncTask<Object, Void, String[]> {
+    CallbackContext callbackContext;
+    @Override
+    protected void onPostExecute(String[] results) {
+      String error = results[0];
+      String success = results[1];
+      if (error != null) {
+        this.callbackContext.error(error);
+      } else {
+        this.callbackContext.success(success);
       }
     }
 
-    callbackContext.error("CONNECT_FAILED_TIMEOUT");
-    Log.d(TAG, "WifiWizard: Network failed to finish connecting within the timeout");
-    return false;
+    @Override
+    protected String[] doInBackground(Object... params) {
+      this.callbackContext = (CallbackContext) params[0];
+      int networkIdToConnect = (int) params[1];
 
+      final int TIMES_TO_RETRY = 60;
+      for (int i = 0; i < TIMES_TO_RETRY; i++) {
+
+        WifiInfo info = wifiManager.getConnectionInfo();
+        NetworkInfo.DetailedState connectionState = info
+            .getDetailedStateOf(info.getSupplicantState());
+
+        boolean isConnected =
+            // need to ensure we're on correct network because sometimes this code is
+            // reached before the initial network has disconnected
+            info.getNetworkId() == networkIdToConnect && (
+                connectionState == NetworkInfo.DetailedState.CONNECTED ||
+                    // Android seems to sometimes get stuck in OBTAINING_IPADDR after it has received one
+                    (connectionState == NetworkInfo.DetailedState.OBTAINING_IPADDR
+                        && info.getIpAddress() != 0)
+            );
+
+        if (isConnected) {
+          return new String[]{ null, "NETWORK_CONNECTION_COMPLETED" };
+        }
+
+        Log.d(TAG, "WifiWizard: Got " + connectionState.name() + " on " + (i + 1) + " out of " + TIMES_TO_RETRY);
+        final int ONE_SECOND = 1000;
+
+        try {
+          Thread.sleep(ONE_SECOND);
+        } catch (InterruptedException e) {
+          Log.e(TAG, e.getMessage());
+          return new String[]{ "INTERRUPT_EXCEPT_WHILE_CONNECTING", null };
+        }
+      }
+      Log.d(TAG, "WifiWizard: Network failed to finish connecting within the timeout");
+      return new String[]{ "CONNECT_FAILED_TIMEOUT", null };
+    }
   }
 
   /**
