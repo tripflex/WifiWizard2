@@ -53,7 +53,7 @@ var WifiWizard2 = {
 			if (wifi !== null && typeof wifi === "object") {
 				// Ok to proceed!
 
-				let networkInformation = [];
+				var networkInformation = [];
 
 				if (wifi.SSID !== undefined && wifi.SSID !== "") {
 					networkInformation.push(wifi.SSID);
