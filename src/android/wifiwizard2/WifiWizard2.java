@@ -55,8 +55,6 @@ import java.net.NetworkInterface;
 
 import java.net.UnknownHostException;
 
-import jdk.nashorn.internal.codegen.CompilerConstants;
-
 public class WifiWizard2 extends CordovaPlugin {
 
   private static final String TAG = "WifiWizard2";
