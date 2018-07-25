@@ -73,7 +73,9 @@ WifiWizard2.scan([options])
 For functionality, you need to note the following:
  - Connect/Disconnect only works for iOS11+
  - Can't run in the simulator so you need to attach an actual device when building with xCode
- - Need to add the 'HotspotConfiguration' and 'NetworkExtensions' capabilities to your xCode project
+ - Will ensure 'HotspotConfiguration' and 'NetworkExtensions' capabilities are added to your xCode project
+ 
+
 
 ```javascript
 WifiWizard2.iOSConnectNetwork(ssid, ssidPassword)
@@ -91,7 +93,7 @@ I have changed the way this works in WifiWizard2 version 3.0.0+, converting it t
 If the connect method is unable to update existing network configuration (added by user or other apps), but there is a valid network ID, it will still attempt to enable that network ID.
 
 ```javascript
-WifiWizard2.connect(ssid, bindAll, password, algorithm)
+WifiWizard2.connect(ssid, bindAll, password, algorithm, isHiddenSSID)
 ```
  - `ssid` should be the SSID to connect to *required*
  - `bindAll` should be set to `true` to tell Android to route all connections from your Android app, through the wifi connection (default is `false`) *optional*
@@ -99,6 +101,7 @@ WifiWizard2.connect(ssid, bindAll, password, algorithm)
  - `algorithm` and `password` is not required if connecting to an open network
  - Currently `WPA` and `WEP` are only supported algorithms
  - For `WPA2` just pass `WPA` as the algorithm
+ - Set `isHiddenSSID` to `true` if the network you're connecting to is hidden
  - These arguments are the same as for `formatWifiConfig`
  - This method essentially calls `formatWifiConfig` then `add` then `enable`
  - If unable to update network configuration (was added by user or other app), but a valid network ID exists, this method will still attempt to enable the network
@@ -129,15 +132,16 @@ WifiWizard2.disconnect(ssid)
  - `ERROR_DISCONNECT` - Android error disconnecting wifi (only when SSID is not passed)
 
 ```javascript
-WifiWizard2.formatWifiConfig(ssid, password, algorithm)
+WifiWizard2.formatWifiConfig(ssid, password, algorithm, isHiddenSSID)
 ```
  - `algorithm` and `password` is not required if connecting to an open network
  - Currently `WPA` and `WEP` are only supported algorithms
  - For `WPA2` just pass `WPA` as the algorithm
+ - Set `isHiddenSSID` to `true` if the network you're connecting to is hidden
 ```javascript
-WifiWizard2.formatWPAConfig(ssid, password)
+WifiWizard2.formatWPAConfig(ssid, password, isHiddenSSID)
 ```
- - This is just a helper method that calls `WifiWizard2.formatWifiConfig( ssid, password, 'WPA' );`
+ - This is just a helper method that calls `WifiWizard2.formatWifiConfig( ssid, password, 'WPA', isHiddenSSID );`
 
 ```javascript
 WifiWizard2.add(wifi)

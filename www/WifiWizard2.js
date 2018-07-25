@@ -53,7 +53,7 @@ var WifiWizard2 = {
 			if (wifi !== null && typeof wifi === "object") {
 				// Ok to proceed!
 
-				let networkInformation = [];
+				var networkInformation = [];
 
 				if (wifi.SSID !== undefined && wifi.SSID !== "") {
 					networkInformation.push(wifi.SSID);
@@ -75,6 +75,8 @@ var WifiWizard2 = {
 							break;
 						case "NONE":
 							networkInformation.push("NONE");
+							// Adding twice for data structure consistency
+							networkInformation.push("NONE");
 							break;
 						case "Newly supported type":
 							break;
@@ -87,6 +89,7 @@ var WifiWizard2 = {
 					return false;
 				}
 
+				networkInformation.push(!!wifi.isHiddenSSID)
 				cordova.exec(resolve, reject, "WifiWizard2", "add", networkInformation);
 
 			} else {
@@ -118,7 +121,7 @@ var WifiWizard2 = {
 	 * @param {string} [algorithm=NONE]			WPA, WPA (for WPA2), WEP or NONE (NONE by default)
    * @returns {Promise<any>}
    */
-  connect: function ( SSID, bindAll, password, algorithm ) {
+  connect: function ( SSID, bindAll, password, algorithm, isHiddenSSID ) {
     return new Promise( function( resolve, reject ){
 
       if( ! SSID ){
@@ -126,7 +129,7 @@ var WifiWizard2 = {
         return;
       }
 
-      var wifiConfig = WifiWizard2.formatWifiConfig( SSID, password, algorithm );
+      var wifiConfig = WifiWizard2.formatWifiConfig( SSID, password, algorithm, isHiddenSSID );
       bindAll = bindAll ? true : false;
 
       if( ! wifiConfig ){
@@ -477,11 +480,13 @@ var WifiWizard2 = {
 	 * @param {string|int} [SSID]
 	 * @param {string} [password]
 	 * @param {string} [algorithm]
+	 * @param {boolean} [isHiddenSSID]
 	 * @returns {*}
 	 */
-	formatWifiConfig: function (SSID, password, algorithm) {
+	formatWifiConfig: function (SSID, password, algorithm, isHiddenSSID) {
 		var wifiConfig = {
-			SSID: WifiWizard2.formatWifiString(SSID)
+			SSID: WifiWizard2.formatWifiString(SSID),
+			isHiddenSSID: !!isHiddenSSID
 		};
 		if (!algorithm && !password) {
 			// open network
@@ -518,11 +523,12 @@ var WifiWizard2 = {
 	/**
 	 * Format WPA WiFi configuration for Android Devices
 	 * @param {string|int} [SSID]
-	 * @param password
+	 * @param {string} password
+	 * @param {boolean} isHiddenSSID
 	 * @returns {*}
 	 */
-	formatWPAConfig: function (SSID, password) {
-		return WifiWizard2.formatWifiConfig(SSID, password, "WPA");
+	formatWPAConfig: function (SSID, password, isHiddenSSID) {
+		return WifiWizard2.formatWifiConfig(SSID, password, "WPA", isHiddenSSID);
 	},
 
 	/**
