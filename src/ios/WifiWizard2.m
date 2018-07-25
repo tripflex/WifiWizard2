@@ -248,5 +248,23 @@
                                 callbackId:command.callbackId];
 }
 
+- (void)resetBindALL:(CDVInvokedUrlCommand*)command {
+    CDVPluginResult *pluginResult = nil;
+    
+    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Not supported"];
+    
+    [self.commandDelegate sendPluginResult:pluginResult
+                                callbackId:command.callbackId];
+}
+
+- (void)setBindAll:(CDVInvokedUrlCommand*)command {
+    CDVPluginResult *pluginResult = nil;
+    
+    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Not supported"];
+    
+    [self.commandDelegate sendPluginResult:pluginResult
+                                callbackId:command.callbackId];
+}
+
 
 @end
