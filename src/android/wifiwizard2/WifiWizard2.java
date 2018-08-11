@@ -738,7 +738,7 @@ public class WifiWizard2 extends CordovaPlugin {
     @Override
     protected String[] doInBackground(Object... params) {
       this.callbackContext = (CallbackContext) params[0];
-      int networkIdToConnect = (int) params[1];
+      int networkIdToConnect = (Integer) params[1];
 
       final int TIMES_TO_RETRY = 15;
       for (int i = 0; i < TIMES_TO_RETRY; i++) {
