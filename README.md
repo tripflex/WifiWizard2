@@ -363,20 +363,27 @@ WifiWizard2.timeout(4000).then( function(){
 
 Run ```cordova plugin add https://github.com/tripflex/wifiwizard2```
 
-To install from the master branch (latest on GitHub):
+To install from the master branch (latest on GitHub)
+
+To install a specific branch (add `#tag` replacing `tag` with tag from this repo, example:
+```cordova plugin add https://github.com/tripflex/wifiwizard2#v3.1.0```
+
+Find available tags here:
+https://github.com/tripflex/WifiWizard2/tags
+
 
 If you are wanting to have the latest and greatest stable version, then run the 'Releases' command below.
 
 ##### Releases
-Run ```cordova plugin add wifiwizard2```
+Run ```cordova plugin add cordova-plugin-wifiwizard2```
 
 ##### Meteor
 To install and use this plugin in a Meteor project, you have to specify the exact version from NPM repository:
-[https://www.npmjs.com/package/wifiwizard2](https://www.npmjs.com/package/wifiwizard2)
+[https://www.npmjs.com/package/cordova-plugin-wifiwizard2](https://www.npmjs.com/package/cordova-plugin-wifiwizard2)
 
 As of 8/28/2018, the latest version is 3.1.0:
 
-```meteor add cordova:wifiwizard2@3.1.0```
+```meteor add cordova:cordova-plugin-wifiwizard2@3.1.0```
 
 ### Errors/Rejections
 Methods now return formatted string errors as detailed below, instead of returning generic error messages.  This allows you to check yourself what specific error was returned, and customize the error message.
