@@ -88,6 +88,52 @@
 
 }
 
+- (void)iOSConnectOpenNetwork:(CDVInvokedUrlCommand*)command {
+
+    __block CDVPluginResult *pluginResult = nil;
+
+    NSString * ssidString;
+    NSDictionary* options = [[NSDictionary alloc]init];
+
+    options = [command argumentAtIndex:0];
+    ssidString = [options objectForKey:@"Ssid"];
+
+    if (@available(iOS 11.0, *)) {
+        if (ssidString && [ssidString length]) {
+            NEHotspotConfiguration *configuration = [[NEHotspotConfiguration
+                    alloc] initWithSSID:ssidString];
+
+            configuration.joinOnce = false;
+
+            [[NEHotspotConfigurationManager sharedManager] applyConfiguration:configuration completionHandler:^(NSError * _Nullable error) {
+
+                NSDictionary *r = [self fetchSSIDInfo];
+
+                NSString *ssid = [r objectForKey:(id)kCNNetworkInfoKeySSID]; //@"SSID"
+
+                if ([ssid isEqualToString:ssidString]){
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:ssidString];
+                }else{
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.description];
+                }
+                [self.commandDelegate sendPluginResult:pluginResult
+                                            callbackId:command.callbackId];
+            }];
+
+
+        } else {
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"SSID Not provided"];
+            [self.commandDelegate sendPluginResult:pluginResult
+                                        callbackId:command.callbackId];
+        }
+    } else {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"iOS 11+ not available"];
+        [self.commandDelegate sendPluginResult:pluginResult
+                                    callbackId:command.callbackId];
+    }
+
+
+}
 
 - (void)iOSDisconnectNetwork:(CDVInvokedUrlCommand*)command {
     CDVPluginResult *pluginResult = nil;
