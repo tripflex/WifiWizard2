@@ -1,5 +1,28 @@
-# WifiWizard2 - 3.1.0
+# WiFiWizard2 - 3.1.0<!-- omit in toc -->
 
+Table of Contents<!-- omit in toc -->
+---
+- [About](#about)
+- [Basics](#basics)
+    - [Async Handling](#async-handling)
+    - [Demo Meteor Project](#demo-meteor-project)
+    - [Android Permissions and Notes](#android-permissions-and-notes)
+- [Global Functions](#global-functions)
+- [iOS Functions](#ios-functions)
+- [Android Functions](#android-functions)
+    - [Connect vs Enable](#connect-vs-enable)
+    - [Disconnect vs Disable](#disconnect-vs-disable)
+    - [New to 3.0.0+](#new-to-300)
+- [Installation](#installation)
+    - [Master](#master)
+    - [Releases](#releases)
+    - [Meteor](#meteor)
+- [Errors/Rejections](#errorsrejections)
+    - [Generic **Thrown Errors**](#generic-thrown-errors)
+- [Examples](#examples)
+- [Changelog:](#changelog)
+
+# About
 WifiWizard2 enables Wifi management for both Android and iOS applications within Cordova/Phonegap projects.
 
 This project is a fork of the [WifiWizard](https://github.com/hoerresb/WifiWizard) plugin with fixes and updates, as well as patches taken from the [Cordova Network Manager](https://github.com/arsenal942/Cordova-Network-Manager) plugin.
@@ -16,7 +39,7 @@ The recommended version to use is the latest 3+ as that is the version that is a
 
 **If you're a Cordova developer, please consider helping out this project, open a new issue, a PR, or contact me directly**
 
-## Basics
+# Basics
 
 This plugin creates the object `WifiWizard2` and is accessible after `deviceready` has been fired, see [Cordova deviceready Event Docs](https://cordova.apache.org/docs/en/latest/cordova/events/events.html#deviceready)
 
@@ -60,7 +83,31 @@ WifiWizard2.getConnectedBSSID()
 ```
  - Same as above, except BSSID (mac) is returned
 
-##### Thrown Errors
+```javascript
+WifiWizard2.timeout(delay)
+```
+ - `delay` should be time in milliseconds to delay
+ - Helper async timeout delay, `delay` is optional, default is 2000ms = 2 seconds
+ - This method always returns a resolved promise after the delay, it will never reject or throw an error
+
+**Example inside async function**
+```javascript
+async function example(){
+    await WifiWizard2.timeout(4000);
+    // do something after 4 seconds
+}
+```
+
+**Example inside standard non-async function**
+```javascript
+function example(){
+    WifiWizard2.timeout(4000).then( function(){
+        // do something after waiting 4 seconds
+    }):
+}
+```
+
+ **Thrown Errors**
 
 - `TIMEOUT_WAITING_FOR_SCAN` on timeout waiting for scan 10 seconds +
 - `SCAN_FAILED` if unable to start scan
@@ -82,7 +129,7 @@ WifiWizard2.iOSDisconnectNetwork(ssid)
 # Android Functions
  - **WifiWizard2** *will automagically try to enable WiFi if it's disabled when calling any android related methods that require WiFi to be enabled*
 
-### Connect vs Enable
+## Connect vs Enable
 When writing Android Java code, there is no `connect` methods, you basically either `enable` or `disable` a network. In the original versions of WifiWizard the `connect` method would basically just call `enable` in Android.
 I have changed the way this works in WifiWizard2 version 3.0.0+, converting it to a helper method to eliminate having to call `formatWifiConfig` then `add` and then `enable` ... the `connect` method will now automatically call `formatWifiConfig`, then call `add` to either add or update the network configuration, and then call `enable`.
 If the connect method is unable to update existing network configuration (added by user or other apps), but there is a valid network ID, it will still attempt to enable that network ID.
@@ -102,14 +149,16 @@ WifiWizard2.connect(ssid, bindAll, password, algorithm, isHiddenSSID)
  - If unable to update network configuration (was added by user or other app), but a valid network ID exists, this method will still attempt to enable the network
  - Promise will not be returned until method has verified that connection to WiFi was in completed state (waits up to 60 seconds)
 
-##### Thrown Errors
+**Thrown Errors**
+
+
  - `CONNECT_FAILED_TIMEOUT` unable to verify connection, timed out after 60 seconds
  - `INVALID_NETWORK_ID_TO_CONNECT` Unable to connect based on generated wifi config
  - `INTERPUT_EXCEPT_WHILE_CONNECTING` Interupt exception while waiting for connection
 
 
 
-### Disconnect vs Disable
+## Disconnect vs Disable
 Same as above for Connect vs Enable, except in this situation, `disconnect` will first disable the network, and then attempt to remove it (if SSID is passed)
 
 ```javascript
@@ -120,7 +169,8 @@ WifiWizard2.disconnect(ssid)
  - If `ssid` is provided, this method will first attempt to `disable` and then `remove` the network
  - If you do not want to remove network configuration, use `disable` instead
 
-##### Thrown Errors
+**Thrown Errors**
+
  - `DISCONNECT_NET_REMOVE_ERROR` Android returned error when removing wifi configuration
  - `DISCONNECT_NET_DISABLE_ERROR` Unable to connect based on generated wifi config
  - `DISCONNECT_NET_ID_NOT_FOUND` Unable to determine network ID to disconnect/remove (from passed SSID)
@@ -143,7 +193,8 @@ WifiWizard2.add(wifi)
 ```
  - `wifi` must be an object formatted by `formatWifiConfig`, this **must** be done before calling `enable`
 
-##### Thrown Errors
+**Thrown Errors**
+
 - `AUTH_TYPE_NOT_SUPPORTED` - Invalid auth type specified
 - `ERROR_ADDING_NETWORK` - Android returned `-1` specifying error adding network
 - `ERROR_UPDATING_NETWORK` - Same as above, except an existing network ID was found, and unable to update it
@@ -154,7 +205,8 @@ WifiWizard2.remove(ssid)
  - `ssid` can either be an SSID (string) or a network ID (integer)
  - Please note, most newer versions of Android will only allow wifi to be removed if created by your application
 
-##### Thrown Errors
+**Thrown Errors**
+
  - `UNABLE_TO_REMOVE` Android returned failure in removing network
  - `REMOVE_NETWORK_NOT_FOUND` Unable to determine network ID from passed SSID
 
@@ -173,7 +225,8 @@ WifiWizard2.startScan()
 ```
  - It is recommended to just use the `scan` method instead of `startScan`
 
-##### Thrown Errors
+**Thrown Errors**
+
  - `STARTSCAN_FAILED` Android returned failure in starting scan
 
 
@@ -215,7 +268,8 @@ WifiWizard2.setWifiEnabled(enabled)
  - Pass `true` for `enabled` parameter to set Wifi enabled
  - You do not need to call this function to set WiFi enabled to call other methods that require wifi enabled.  This plugin will automagically enable WiFi if a method is called that requires WiFi to be enabled.
 
-##### Thrown Errors
+**Thrown Errors**
+
  - `ERROR_SETWIFIENABLED` wifi state does not match call (enable or disable)
 
 ```javascript
@@ -223,7 +277,8 @@ WifiWizard2.getConnectedNetworkID()
 ```
  - Returns currently connected network ID in success callback (only if connected), otherwise fail callback will be called
 
-##### Thrown Errors
+**Thrown Errors**
+
  - `GET_CONNECTED_NET_ID_ERROR` Unable to determine currently connected network ID (may not be connected)
 
 ## New to 3.0.0+
@@ -263,14 +318,16 @@ WifiWizard2.getWifiRouterIP()
 ```
  - Returns IPv4 WiFi router IP from currently connected WiFi, or rejects promise if unable to determine, or wifi not connected
 
-##### Thrown Errors
+**Thrown Errors**
+
  - `NO_VALID_IP_IDENTIFIED` if unable to determine a valid IP (ip returned from device is `0.0.0.0`)
 
 ```javascript
 WifiWizard2.getWifiIPInfo()
 ```
  - Returns a JSON object with IPv4 address and subnet `{"ip": "192.168.1.2", "subnet": "255.255.255.0" }` or rejected promise if not found or not connected
-##### Thrown Errors
+**Thrown Errors**
+
  - `NO_VALID_IP_IDENTIFIED` if unable to determine a valid IP (ip returned from device is `0.0.0.0`)
 
 ```javascript
@@ -278,7 +335,8 @@ WifiWizard2.reconnect()
 ```
  - Reconnect to the currently active access point, **if we are currently disconnected.**
 
-##### Thrown Errors
+**Thrown Errors**
+
  - `ERROR_RECONNECT` Android returned error when reconnecting
 
 ```javascript
@@ -286,7 +344,8 @@ WifiWizard2.reassociate()
 ```
  - Reconnect to the currently active access point, **even if we are already connected.**
 
-##### Thrown Errors
+**Thrown Errors**
+
  - `ERROR_REASSOCIATE` Android returned error when reassociating
 
 
@@ -302,7 +361,8 @@ WifiWizard2.disable(ssid)
  - Disable the passed SSID network
  - Please note that most newer versions of Android will only allow you to disable networks created by your application
 
-##### Thrown Errors
+**Thrown Errors**
+
  - `UNABLE_TO_DISABLE` Android returned failure in disabling network
  - `DISABLE_NETWORK_NOT_FOUND` Unable to determine network ID from passed SSID to disable
 
@@ -314,7 +374,8 @@ WifiWizard2.requestPermission()
  - This Android permission is required to run `scan`, `startStart` and `getScanResults`
  - You can request permission by running this function manually, or WifiWizard2 will automagically request permission when one of the functions above is called
 
-##### Thrown Errors
+**Thrown Errors**
+
  - `PERMISSION_DENIED` user denied permission on device
 
 
@@ -334,32 +395,13 @@ WifiWizard2.enable(ssid, bindAll, waitForConnection)
  - You **MUST** call `WifiWizard2.add(wifi)` before calling `enable` as the wifi configuration must exist before you can enable it (or previously used `connect` without calling `disconnect`)
  - This method does NOT wait or verify connection to wifi network, pass `true` to `waitForConnection` to only return promise once connection is verified in COMPLETED state to specific `ssid`
 
-###### Thrown Errors
+**Thrown Errors**
+
 `UNABLE_TO_ENABLE` - Android returned `-1` signifying failure enabling
 
-```javascript
-WifiWizard2.timeout(delay)
-```
- - `delay` should be time in milliseconds to delay
- - Helper async timeout delay, `delay` is optional, default is 2000ms = 2 seconds
- - This method always returns a resolved promise after the delay, it will never reject or throw an error
+# Installation
 
-###### Example inside async function:
-```javascript
-await WifiWizard2.timeout(4000);
-// do something after 4 seconds
-```
-
-###### Example inside standard non-async function:
-```javascript
-WifiWizard2.timeout(4000).then( function(){
-    // do something after waiting 4 seconds
-}):
-```
-
-### Installation
-
-##### Master
+## Master
 
 Run ```cordova plugin add https://github.com/tripflex/wifiwizard2```
 
@@ -374,10 +416,10 @@ https://github.com/tripflex/WifiWizard2/tags
 
 If you are wanting to have the latest and greatest stable version, then run the 'Releases' command below.
 
-##### Releases
+## Releases
 Run ```cordova plugin add cordova-plugin-wifiwizard2```
 
-##### Meteor
+## Meteor
 To install and use this plugin in a Meteor project, you have to specify the exact version from NPM repository:
 [https://www.npmjs.com/package/cordova-plugin-wifiwizard2](https://www.npmjs.com/package/cordova-plugin-wifiwizard2)
 
@@ -385,14 +427,14 @@ As of 8/28/2018, the latest version is 3.1.0:
 
 ```meteor add cordova:cordova-plugin-wifiwizard2@3.1.0```
 
-### Errors/Rejections
+# Errors/Rejections
 Methods now return formatted string errors as detailed below, instead of returning generic error messages.  This allows you to check yourself what specific error was returned, and customize the error message.
 In an upcoming release I may add easy ways to override generic messages, or set your own, but for now, errors returned can be found below each method/function.
 
-#### Generic Thrown Errors
+## Generic **Thrown Errors**
 `WIFI_NOT_ENABLED`
 
-### Examples
+# Examples
 
 Please see demo Meteor project for code examples:
 
@@ -410,13 +452,12 @@ wifiConnection.then( result => {
 });
 ```
 
-License
-----
+#License
 Apache 2.0
 
-## Changelog:
+# Changelog:
 
-#### 3.1.0 - August 28, 2018
+**3.1.0** - August 28, 2018
 - Fixed/Added compatibility with iOS to connect to open network
 - Fixed Uncaught SyntaxError in JavaScript from using let (changed to var)
 - Fixed main thread blocked while connecting to a network by connecting asynchronously (props @jack828)
@@ -429,7 +470,7 @@ Apache 2.0
 - Fixed `Object cannot be converted to int` in Android code (props @xLarry)
 - Props to @arsenal942 @jack828 @xLarry @saoron for contributions
 
-#### 3.0.0 - April 12, 2018
+**3.0.0** - April 12, 2018
 - Completely refactored JS methods, all now return Promises
 - Added `getWifiIP` and `getWifiIPInfo` functions
 - Added `getWifiRouterIP` function
@@ -446,12 +487,12 @@ Apache 2.0
 - Updated all error callbacks to use detectable strings (for custom error messages, instead of generic ones)
 - DO NOT upgrade from version 2.x.x without reading ENTIRE README! Method/Function names have all been changed!
 
-#### 2.1.1 - *1/9/2018*
+**2.1.1** - *1/9/2018*
 - **Added Async Promise based methods**
 - Fix issue with thread running before wifi is fully enabled
 - Added thread sleep for up to 10 seconds waiting for wifi to enable
 
-#### 2.1.0 - *1/8/2018*
+**2.1.0** - *1/8/2018*
 - **Added Async Promise based methods**
 - Fixed incorrect Android Cordova exec methods incorrectly being called and returned (fixes INVALID ACTION errors/warnings)
 - Updated javascript code to call `fail` callback when error detected in JS (before calling Cordova)
@@ -462,7 +503,7 @@ Apache 2.0
 - Added JS doc blocks to JS methods
 - Added Async example code
 
-#### 2.0.0 - *1/5/2018*
+**2.0.0** - *1/5/2018*
 - Added automatic disable of currently connected network on connect call (to prevent reconnect to previous wifi ssid)
 - Added initial `disconnect()` before and `reconnect()` after disable/enable network on connect call
 - Added `getConnectedNetworkID` to return currently connected network ID
@@ -482,62 +523,62 @@ Apache 2.0
 **Changelog below this line, is from original WifiWizard**
 
 
-#### v0.2.9
+**v0.2.9**
 
 `isWifiEnabled` bug fixed. `level` in `getScanResults` object now refers to raw RSSI value. The function now accepts an options object, and by specifiying `{ numLevels: value }` you can get the old behavior.
 
-#### v0.2.8
+**v0.2.8**
 
 `getScanResults` now returns the BSSID along with the SSID and strength of the network.
 
-#### v0.2.7
+**v0.2.7**
 
 - Clobber WifiWizard.js automatically via Cordova plugin architecture
 
-#### v0.2.6 
+**v0.2.6** 
 
 - Added `isWifiEnabled`, `setWifiEnabled`
 
-#### v0.2.5 
+**v0.2.5** 
 
 - Fixes `getConnectedSSID` error handlers
 
-#### v0.2.4 
+**v0.2.4** 
 
 - Added `getConnectedSSID` method
 
-#### v0.2.3 
+**v0.2.3** 
 
 - Added `disconnect` that does disconnection on current WiFi
 
-#### v0.2.2 
+**v0.2.2** 
 
 - Added `startScan` and `getScanResults`
 
-#### v0.2.1 
+**v0.2.1** 
 
 - Fixed reference problem in `formatWPAConfig`
 
-#### v0.2.0 
+**v0.2.0** 
 
 - Changed format of wifiConfiguration object to allow more extensibility.
 
-#### v0.1.1 
+**v0.1.1** 
 
 - `addNetwork` will now update the network if the SSID already exists.
 
-#### v0.1.0 
+**v0.1.0** 
 
 - All functions now work!
 
-#### v0.0.3 
+**v0.0.3** 
 
 - Fixed errors in native implementation. Currently, Add and Remove networks aren't working, but others are working as expected.
 
-#### v0.0.2 
+**v0.0.2** 
 
 - Changed plugin.xml and WifiWizard.js to attach WifiWizard directly to the HTML.
 
-#### v0.0.1 
+**v0.0.1** 
 
 - Initial commit
