@@ -19,6 +19,11 @@ var WifiWizard2 = {
 
         return new Promise(function (resolve, reject) {
 
+            if( ssidPassword !== undefined && ssidPassword.length > 0 && ssidPassword.length < 8 ){
+                reject("WPA/WPA2 password length must be at least 8 characters in length!");
+                return;
+            }
+
             cordova.exec(resolve, reject, "WifiWizard2", "iOSConnectNetwork", [
                 {
                     "Ssid": ssid,
