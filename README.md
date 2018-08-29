@@ -1,4 +1,4 @@
-# WifiWizard2 - 3.0
+# WifiWizard2 - 3.1.0
 
 WifiWizard2 enables Wifi management for both Android and iOS applications within Cordova/Phonegap projects.
 
@@ -59,10 +59,6 @@ WifiWizard2.getConnectedSSID()
 WifiWizard2.getConnectedBSSID()
 ```
  - Same as above, except BSSID (mac) is returned
-```javascript
-WifiWizard2.scan([options])
-```
-- Same as calling `startScan` and then `getScanResults`, except this method will only resolve the promise after the scan completes and returns the results.
 
 ##### Thrown Errors
 
@@ -74,8 +70,7 @@ For functionality, you need to note the following:
  - Connect/Disconnect only works for iOS11+
  - Can't run in the simulator so you need to attach an actual device when building with xCode
  - Will ensure 'HotspotConfiguration' and 'NetworkExtensions' capabilities are added to your xCode project
- 
-
+ - To connect to open network omit `ssidPassword` or call with `false`
 
 ```javascript
 WifiWizard2.iOSConnectNetwork(ssid, ssidPassword)
@@ -167,6 +162,11 @@ WifiWizard2.remove(ssid)
 ```javascript
 WifiWizard2.listNetworks()
 ```
+
+```javascript
+WifiWizard2.scan([options])
+```
+- Same as calling `startScan` and then `getScanResults`, except this method will only resolve the promise after the scan completes and returns the results.
 
 ```javascript
 WifiWizard2.startScan()
@@ -374,9 +374,9 @@ Run ```cordova plugin add wifiwizard2```
 To install and use this plugin in a Meteor project, you have to specify the exact version from NPM repository:
 [https://www.npmjs.com/package/wifiwizard2](https://www.npmjs.com/package/wifiwizard2)
 
-As of 4/12/2018, the latest version is 3.0.0:
+As of 8/28/2018, the latest version is 3.1.0:
 
-```meteor add cordova:wifiwizard2@3.0.0```
+```meteor add cordova:wifiwizard2@3.1.0```
 
 ### Errors/Rejections
 Methods now return formatted string errors as detailed below, instead of returning generic error messages.  This allows you to check yourself what specific error was returned, and customize the error message.
@@ -405,10 +405,22 @@ wifiConnection.then( result => {
 
 License
 ----
-
 Apache 2.0
 
 ## Changelog:
+
+#### 3.1.0 - August 28, 2018
+- Fixed/Added compatibility with iOS to connect to open network
+- Fixed Uncaught SyntaxError in JavaScript from using let (changed to var)
+- Fixed main thread blocked while connecting to a network by connecting asynchronously (props @jack828)
+- Add isHiddenSSID config for connecting Android devices to hidden networks (props @jack828)
+- Update iOSConnectNetwork to return real response in promise (props @saoron)
+- Correct iOS SSID comparison (props @saoron)
+- iOS Add HotspotConfiguration & NetworkExtension capabilities automatically (props @saoron)
+- Removed `jdk.nashorn.internal.codegen.CompilerConstants` import (props @jack828)
+- Reduce connection retry count from 60 -> 15 (props @jack828)
+- Fixed `Object cannot be converted to int` in Android code (props @xLarry)
+- Props to @arsenal942 @jack828 @xLarry @saoron for contributions
 
 #### 3.0.0 - April 12, 2018
 - Completely refactored JS methods, all now return Promises
