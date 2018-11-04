@@ -6,7 +6,7 @@ Table of Contents<!-- omit in toc -->
 - [Basics](#basics)
     - [Async Handling](#async-handling)
     - [Demo Meteor Project](#demo-meteor-project)
-    - [Android Permissions and Notes](#android-permissions-and-notes)
+    - [Android IOS Permissions and Notes](#android-permissions-and-notes)
 - [Global Functions](#global-functions)
 - [iOS Functions](#ios-functions)
 - [Android Functions](#android-functions)
@@ -65,11 +65,14 @@ To test this plugin as well as provide some example code for others to work off 
 
 This demo has examples of using both async functions (with `async/await` and `try/catch` blocks), as well as non async functions with `.then` and `.catch`
 
-## Android Permissions and Notes
+## Android and IOS Permissions and Notes
 In order to obtain scan results (to call `scan` or `startScan` then `getScanResults`) your application must have the `ACCESS_FINE_LOCATION` Android Permission.  You can do this by calling the `requestPermission` method detailed below, or
 this plugin will automagically do this for you when you call `scan` or `startScan` functions.
 
 Newer versions of Android will **not** allow you to `remove`, update existing configuration, or `disable` networks that were not created by your application.  If you are having issues using this features, with your device connected to your computer, run `adb logcat` to view Android Logs for specific error.
+
+## IOS Notes
+iOS 12 and later, enable the Access WiFi Information capability for your app in Xcode. When you enable this capability, Xcode automatically adds the Access WiFi Information entitlement to your entitlements file and App ID.
 
 # Global Functions
 These are functions that can be used by both Android and iOS applications
