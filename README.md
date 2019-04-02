@@ -460,7 +460,7 @@ Apache 2.0
 
 # Changelog:
 **3.1.1** - April 4, 2019
-- Fixed/Added location services check for Android 9+ for any method that utilises the getConnectionInfo method
+- Fixed/Added location services check for Android 9+ for any method that utilises the getConnectionInfo method. Issue #71 (@arsenal942) 
 
 **3.1.0** - August 28, 2018
 - Fixed/Added compatibility with iOS to connect to open network
