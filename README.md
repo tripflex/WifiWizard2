@@ -1,4 +1,4 @@
-# WiFiWizard2 - 3.1.0<!-- omit in toc -->
+# WiFiWizard2 - 3.1.1<!-- omit in toc -->
 
 Table of Contents<!-- omit in toc -->
 ---
@@ -411,7 +411,7 @@ Run ```cordova plugin add https://github.com/tripflex/wifiwizard2```
 To install from the master branch (latest on GitHub)
 
 To install a specific branch (add `#tag` replacing `tag` with tag from this repo, example:
-```cordova plugin add https://github.com/tripflex/wifiwizard2#v3.1.0```
+```cordova plugin add https://github.com/tripflex/wifiwizard2#v3.1.1```
 
 Find available tags here:
 https://github.com/tripflex/WifiWizard2/tags
@@ -426,9 +426,9 @@ Run ```cordova plugin add cordova-plugin-wifiwizard2```
 To install and use this plugin in a Meteor project, you have to specify the exact version from NPM repository:
 [https://www.npmjs.com/package/cordova-plugin-wifiwizard2](https://www.npmjs.com/package/cordova-plugin-wifiwizard2)
 
-As of 8/28/2018, the latest version is 3.1.0:
+As of April 4th 2019, the latest version is 3.1.1:
 
-```meteor add cordova:cordova-plugin-wifiwizard2@3.1.0```
+```meteor add cordova:cordova-plugin-wifiwizard2@3.1.1```
 
 # Errors/Rejections
 Methods now return formatted string errors as detailed below, instead of returning generic error messages.  This allows you to check yourself what specific error was returned, and customize the error message.
@@ -459,6 +459,8 @@ wifiConnection.then( result => {
 Apache 2.0
 
 # Changelog:
+**3.1.1** - April 4, 2019
+- Fixed/Added location services check for Android 9+ for any method that utilises the getConnectionInfo method. Issue #71 (@arsenal942) 
 
 **3.1.0** - August 28, 2018
 - Fixed/Added compatibility with iOS to connect to open network

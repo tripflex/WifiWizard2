@@ -89,6 +89,7 @@ public class WifiWizard2 extends CordovaPlugin {
   private static final int SCAN_RESULTS_CODE = 0; // Permissions request code for getScanResults()
   private static final int SCAN_CODE = 1; // Permissions request code for scan()
   private static final int LOCATION_REQUEST_CODE = 2; // Permissions request code
+  private static final int WIFI_SERVICE_INFO_CODE = 3;
   private static final String ACCESS_FINE_LOCATION = android.Manifest.permission.ACCESS_FINE_LOCATION;
 
   private static int LAST_NET_ID = -1;
@@ -1129,41 +1130,45 @@ public class WifiWizard2 extends CordovaPlugin {
    * @param basicIdentifier A flag to get BSSID if true or SSID if false.
    * @return true if SSID found, false if not.
    */
-  private boolean getWifiServiceInfo(CallbackContext callbackContext, boolean basicIdentifier) {
-
-    WifiInfo info = wifiManager.getConnectionInfo();
-
-    if (info == null) {
-      callbackContext.error("UNABLE_TO_READ_WIFI_INFO");
-      return false;
-    }
-
-    // Only return SSID or BSSID when actually connected to a network
-    SupplicantState state = info.getSupplicantState();
-    if (!state.equals(SupplicantState.COMPLETED)) {
-      callbackContext.error("CONNECTION_NOT_COMPLETED");
-      return false;
-    }
-
-    String serviceInfo;
-    if (basicIdentifier) {
-      serviceInfo = info.getBSSID();
+  private boolean getWifiServiceInfo(CallbackContext callbackContext, boolean basicIdentifier) {    
+    if (API_VERSION >= 28 && !cordova.hasPermission(ACCESS_FINE_LOCATION)) { //Android 9 (Pie) or newer
+      requestLocationPermission(WIFI_SERVICE_INFO_CODE);
+      return true;
     } else {
-      serviceInfo = info.getSSID();
-    }
+      WifiInfo info = wifiManager.getConnectionInfo();
 
-    if (serviceInfo == null || serviceInfo.isEmpty() || serviceInfo == "0x") {
-      callbackContext.error("WIFI_INFORMATION_EMPTY");
-      return false;
+      if (info == null) {
+        callbackContext.error("UNABLE_TO_READ_WIFI_INFO");
+        return false;
+      }
+  
+      // Only return SSID or BSSID when actually connected to a network
+      SupplicantState state = info.getSupplicantState();
+      if (!state.equals(SupplicantState.COMPLETED)) {
+        callbackContext.error("CONNECTION_NOT_COMPLETED");
+        return false;
+      }
+  
+      String serviceInfo;
+      if (basicIdentifier) {
+        serviceInfo = info.getBSSID();
+      } else {
+        serviceInfo = info.getSSID();
+      }
+  
+      if (serviceInfo == null || serviceInfo.isEmpty() || serviceInfo == "0x") {
+        callbackContext.error("WIFI_INFORMATION_EMPTY");
+        return false;
+      }
+  
+      // http://developer.android.com/reference/android/net/wifi/WifiInfo.html#getSSID()
+      if (serviceInfo.startsWith("\"") && serviceInfo.endsWith("\"")) {
+        serviceInfo = serviceInfo.substring(1, serviceInfo.length() - 1);
+      }
+  
+      callbackContext.success(serviceInfo);
+      return true;
     }
-
-    // http://developer.android.com/reference/android/net/wifi/WifiInfo.html#getSSID()
-    if (serviceInfo.startsWith("\"") && serviceInfo.endsWith("\"")) {
-      serviceInfo = serviceInfo.substring(1, serviceInfo.length() - 1);
-    }
-
-    callbackContext.success(serviceInfo);
-    return true;
   }
 
   /**
@@ -1458,16 +1463,18 @@ public class WifiWizard2 extends CordovaPlugin {
 
     switch (requestCode) {
       case SCAN_RESULTS_CODE:
-        getScanResults(callbackContext, passedData ); // Call method again after permissions approved
+        getScanResults(callbackContext, passedData); // Call method again after permissions approved
         break;
       case SCAN_CODE:
-        scan(callbackContext, passedData ); // Call method again after permissions approved
+        scan(callbackContext, passedData); // Call method again after permissions approved
         break;
       case LOCATION_REQUEST_CODE:
         callbackContext.success("PERMISSION_GRANTED");
         break;
+      case WIFI_SERVICE_INFO_CODE:
+        callbackContext.success("PERMISSION_GRANTED");
+        break;
     }
-
   }
 
   /**
