@@ -1,8 +1,8 @@
 {
-  "name": "cordova-plugin-wifiwizard2-arsenal942",
+  "name": "cordova-plugin-wifiwizard2",
   "version": "3.1.1",
   "cordova": {
-    "id": "wifiwizard2-arsenal942",
+    "id": "wifiwizard2",
     "platforms": [
       "android",
       "ios"
@@ -10,13 +10,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/arsenal942/WifiWizard2.git"
+    "url": "git+https://github.com/tripflex/wifiwizard2.git"
   },
   "author": "Myles McNamara",
   "license": "Apache 2.0",
   "description": "Cordova WiFi Manager for Android and iOS",
   "bugs": {
-    "url": "https://github.com/arsenal942/WifiWizard2/issues"
+    "url": "https://github.com/tripflex/wifiwizard2/issues"
   },
   "engines": {
     "cordovaDependencies": {
@@ -25,7 +25,7 @@
       }
     }
   },
-  "homepage": "https://github.com/arsenal942/WifiWizard2#readme",
+  "homepage": "https://github.com/tripflex/wifiwizard2#readme",
   "keywords": [
     "ecosystem:cordova",
     "cordova-android",

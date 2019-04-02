@@ -2,15 +2,15 @@
 
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
-        id="wifiwizard2-arsenal942"
+        id="wifiwizard2"
         version="3.1.1">
 
     <name>WifiWizard2</name>
     <description>Cordova Wifi Manager for Android and iOS</description>
     <license>Apache 2.0</license>
     <keywords>cordova,network,wifi,phonegap</keywords>
-    <repo>https://github.com/arsenal942/WifiWizard2/wifiwizard2.git</repo>
-    <issue>https://github.com/arsenal942/WifiWizard2/wifiwizard2/issues</issue>
+    <repo>https://github.com/tripflex/wifiwizard2.git</repo>
+    <issue>https://github.com/tripflex/wifiwizard2/issues</issue>
 
     <js-module src="www/WifiWizard2.js" name="WifiWizard2">
         <clobbers target="window.WifiWizard2" />
