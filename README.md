@@ -1,4 +1,4 @@
-# WiFiWizard2 - 3.1.0<!-- omit in toc -->
+# WiFiWizard2 - 3.1.1<!-- omit in toc -->
 
 Table of Contents<!-- omit in toc -->
 ---
