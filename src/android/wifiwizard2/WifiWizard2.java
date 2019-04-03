@@ -149,7 +149,6 @@ public class WifiWizard2 extends CordovaPlugin {
   public boolean execute(String action, JSONArray data, CallbackContext callbackContext)
       throws JSONException {
 
-    boolean wifiIsEnabled = verifyWifiEnabled();
     this.callbackContext = callbackContext;
     this.passedData = data;
 
@@ -199,7 +198,8 @@ public class WifiWizard2 extends CordovaPlugin {
       callbackContext.success(result);
       return true;
     }
-
+    
+    boolean wifiIsEnabled = verifyWifiEnabled();
     if (!wifiIsEnabled) {
       callbackContext.error("WIFI_NOT_ENABLED");
       return true; // Even though enable wifi failed, we still return true and handle error in callback
