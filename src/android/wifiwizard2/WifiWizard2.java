@@ -93,6 +93,9 @@ public class WifiWizard2 extends CordovaPlugin {
   private static final String ACCESS_FINE_LOCATION = android.Manifest.permission.ACCESS_FINE_LOCATION;
 
   private static int LAST_NET_ID = -1;
+  // This is for when SSID or BSSID is requested but permissions have not been granted for location
+  // we store whether or not BSSID was requested, to recall the getWifiServiceInfo fn after permissions are granted
+  private static boolean bssidRequested = false;
 
   private WifiManager wifiManager;
   private CallbackContext callbackContext;
@@ -1133,6 +1136,7 @@ public class WifiWizard2 extends CordovaPlugin {
   private boolean getWifiServiceInfo(CallbackContext callbackContext, boolean basicIdentifier) {    
     if (API_VERSION >= 28 && !cordova.hasPermission(ACCESS_FINE_LOCATION)) { //Android 9 (Pie) or newer
       requestLocationPermission(WIFI_SERVICE_INFO_CODE);
+      bssidRequested = basicIdentifier;
       return true;
     } else {
       WifiInfo info = wifiManager.getConnectionInfo();
@@ -1472,7 +1476,7 @@ public class WifiWizard2 extends CordovaPlugin {
         callbackContext.success("PERMISSION_GRANTED");
         break;
       case WIFI_SERVICE_INFO_CODE:
-        callbackContext.success("PERMISSION_GRANTED");
+        getWifiServiceInfo(callbackContext, bssidRequested);
         break;
     }
   }
