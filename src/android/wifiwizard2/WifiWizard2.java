@@ -1669,6 +1669,42 @@ public class WifiWizard2 extends CordovaPlugin {
   }
 
   /**
+   * Will un-bind to network (use Cellular network)
+   *
+   * @param callbackContext A Cordova callback context
+   */
+  private void resetBindAll(CallbackContext callbackContext) {
+    Log.d(TAG, "WifiWizard2: resetBindALL");
+
+    try {
+      maybeResetBindALL();
+      callbackContext.success("Netwrok was unbind");
+    } catch (Exception e) {
+      Log.e(TAG, "InterruptedException error.", e);
+      callbackContext.error("ERROR_NO_BIND_ALL");
+    }
+  }
+
+  /**
+   * Will bind to network (use Wifi network)
+   *
+   * @param callbackContext A Cordova callback context
+   */
+  private void setBindAll(CallbackContext callbackContext) {
+    Log.d(TAG, "WifiWizard2: setBindALL");
+
+    try {
+      int networkId = getConnectedNetId();
+      registerBindALL(networkId);
+      callbackContext.success("Netwrok was bind");
+    } catch (Exception e) {
+      Log.e(TAG, "InterruptedException error.", e);
+      callbackContext.error("ERROR_CANT_BIND_ALL");
+    }
+  }
+
+
+  /**
    * Called after successful connection to WiFi when using BindAll feature
    *
    * This method is called by the NetworkChangedReceiver after network changed action, and confirming that we are in fact connected to wifi,
