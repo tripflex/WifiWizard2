@@ -43,6 +43,9 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.SupplicantState;
 import android.net.ConnectivityManager;
 
+import android.location.LocationManager;
+import android.provider.Settings;
+
 import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -89,6 +92,8 @@ public class WifiWizard2 extends CordovaPlugin {
   private static final String CAN_CONNECT_TO_INTERNET = "canConnectToInternet";
   private static final String IS_CONNECTED_TO_INTERNET = "isConnectedToInternet";
   private static final String GET_WIFI_IP_INFO = "getWifiIPInfo";
+  private static final String IS_LOCATION_ENABLED = "isLocationEnabled";
+  private static final String SWITCH_TO_LOCATION_SETTINGS = "switchToLocationSettings";
 
   private static final int SCAN_RESULTS_CODE = 0; // Permissions request code for getScanResults()
   private static final int SCAN_CODE = 1; // Permissions request code for scan()
@@ -104,6 +109,8 @@ public class WifiWizard2 extends CordovaPlugin {
   private WifiManager wifiManager;
   private CallbackContext callbackContext;
   private JSONArray passedData;
+
+  public static LocationManager locationManager;
 
   private ConnectivityManager connectivityManager;
   private ConnectivityManager.NetworkCallback networkCallback;
@@ -147,6 +154,7 @@ public class WifiWizard2 extends CordovaPlugin {
     super.initialize(cordova, webView);
     this.wifiManager = (WifiManager) cordova.getActivity().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
     this.connectivityManager = (ConnectivityManager) cordova.getActivity().getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+    this.locationManager = (LocationManager) cordova.getActivity().getSystemService(Context.LOCATION_SERVICE);
   }
 
   @Override
@@ -157,8 +165,15 @@ public class WifiWizard2 extends CordovaPlugin {
     this.passedData = data;
 
     // Actions that do not require WiFi to be enabled
-    if (action.equals(IS_WIFI_ENABLED)) {
+    if (action.equals(IS_LOCATION_ENABLED)) {
+      this.isLocationEnabled(callbackContext);
+      return true;
+    } else if (action.equals(IS_WIFI_ENABLED)) {
       this.isWifiEnabled(callbackContext);
+      return true;
+    } else if (action.equals(SWITCH_TO_LOCATION_SETTINGS)) {
+      this.switchToLocationSettings();
+      callbackContext.success();
       return true;
     } else if (action.equals(SET_WIFI_ENABLED)) {
       this.setWifiEnabled(callbackContext, data);
@@ -230,8 +245,6 @@ public class WifiWizard2 extends CordovaPlugin {
       this.reassociate(callbackContext);
     } else if (action.equals(RECONNECT)) {
       this.reconnect(callbackContext);
-    } else if (action.equals(SCAN)) {
-      this.scan(callbackContext, data);
     } else if (action.equals(REMOVE_NETWORK)) {
       this.remove(callbackContext, data);
     } else if (action.equals(CONNECT_NETWORK)) {
@@ -240,18 +253,29 @@ public class WifiWizard2 extends CordovaPlugin {
       this.disconnectNetwork(callbackContext, data);
     } else if (action.equals(LIST_NETWORKS)) {
       this.listNetworks(callbackContext);
+    } else if (action.equals(DISCONNECT)) {
+      this.disconnect(callbackContext);
+    } else if (action.equals(GET_CONNECTED_NETWORKID)) {
+      this.getConnectedNetworkID(callbackContext);
+    }
+
+    // Check if location is globally enabled (and API 32 or newer)
+    if ( !locationIsEnabled() && API_VERSION >= 23 ) {
+      callbackContext.error("LOCATION_NOT_ENABLED");
+      return true; // We still return true and handle error in JS
+    }
+
+    // Actions that require LOCATION to be enabled
+    if (action.equals(SCAN)) {
+      this.scan(callbackContext, data);
     } else if (action.equals(START_SCAN)) {
       this.startScan(callbackContext);
     } else if (action.equals(GET_SCAN_RESULTS)) {
       this.getScanResults(callbackContext, data);
-    } else if (action.equals(DISCONNECT)) {
-      this.disconnect(callbackContext);
     } else if (action.equals(GET_CONNECTED_SSID)) {
       this.getConnectedSSID(callbackContext);
     } else if (action.equals(GET_CONNECTED_BSSID)) {
       this.getConnectedBSSID(callbackContext);
-    } else if (action.equals(GET_CONNECTED_NETWORKID)) {
-      this.getConnectedNetworkID(callbackContext);
     } else {
       callbackContext.error("Incorrect action parameter: " + action);
       // The ONLY time to return FALSE is when action does not exist that was called
@@ -1017,7 +1041,7 @@ public class WifiWizard2 extends CordovaPlugin {
     } else {
 
       requestLocationPermission(SCAN_RESULTS_CODE);
-        return true;
+      return true;
     }
 
   }
@@ -1760,6 +1784,84 @@ public class WifiWizard2 extends CordovaPlugin {
     }
   }
 
+  /**
+   * Check if Location is Enabled
+   * 
+   * @param callbackContext
+   * @return
+   */
+  private boolean locationIsEnabled() {
+
+    try {
+      int locMode = getLocationMode();
+      if (locMode > 0) {
+        return true;
+      } else {
+        return false;
+      }
+
+    } catch (Exception e) {
+      Log.d(TAG, e.getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Check if Location is Enabled
+   * @param callbackContext
+   * @return
+   */
+  private boolean isLocationEnabled(CallbackContext callbackContext) {
+    if ( locationIsEnabled() ) {
+      // Send success as 1 to return true from Promise (handled in JS)
+      callbackContext.success("1");
+      return true;
+    } else {
+      callbackContext.success("0");
+      return false;
+    }
+  }
+
+  /**
+   * Switch to Location Settings
+   */
+  public void switchToLocationSettings() {
+    Intent settingsIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+    this.cordova.getActivity().startActivity(settingsIntent);
+  }
+
+  /**
+   * Get Location Mode (int)
+   * @return
+   * @throws Exception
+   */
+  private int getLocationMode() throws Exception{
+    int mode;
+    if (API_VERSION >= 19) { // Kitkat and above
+      mode = Settings.Secure.getInt(this.cordova.getActivity().getContentResolver(), Settings.Secure.LOCATION_MODE);
+    } else { // Pre-Kitkat
+      if (isLocationProviderEnabled(LocationManager.GPS_PROVIDER)
+          && isLocationProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+        mode = 3;
+      } else if (isLocationProviderEnabled(LocationManager.GPS_PROVIDER)) {
+        mode = 1;
+      } else if (isLocationProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+        mode = 2;
+      } else {
+        mode = 0;
+      }
+    }
+    return mode;
+  }
+
+  /**
+   * Check if location provider is enabled (pre-kitkat versions)
+   * @param provider
+   * @return
+   */
+  private boolean isLocationProviderEnabled(String provider) {
+    return locationManager.isProviderEnabled(provider);
+  }
 
   /**
    * Called after successful connection to WiFi when using BindAll feature

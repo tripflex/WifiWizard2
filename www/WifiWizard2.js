@@ -531,6 +531,38 @@ var WifiWizard2 = {
         });
     },
     /**
+     * Check if Location is enabled on device
+     * @returns {Promise<any>}
+     */
+    isLocationEnabled: function () {
+        return new Promise(function (resolve, reject) {
+
+            cordova.exec(
+                // Cordova can only return strings to JS, and the underlying plugin
+                // sends a "1" for true and "0" for false.
+                function (result) {
+                    if (result == "1") {
+                        resolve("LOCATION_IS_ENABLED");
+                    } else {
+                        reject("LOCATION_NOT_ENABLED");
+                    }
+
+                },
+                reject, "WifiWizard2", "isLocationEnabled", []
+            );
+
+        });
+    },
+    /**
+     * Switch to location settings
+     * @returns {Promise<any>}
+     */
+    switchToLocationSettings: function () {
+        return new Promise(function (resolve, reject) {
+            cordova.exec(resolve, reject, "WifiWizard2", "switchToLocationSettings", []);
+        });
+    },
+    /**
      * Request ACCESS_FINE_LOCATION permission
      *
      * This permission is required by Android to return scan results, you can manually request it prior to running `scan`

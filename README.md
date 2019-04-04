@@ -1,4 +1,4 @@
-# WiFiWizard2 - 3.1.1<!-- omit in toc -->
+# WiFiWizard2 - 3.2.0<!-- omit in toc -->
 
 Table of Contents<!-- omit in toc -->
 ---
@@ -14,6 +14,7 @@ Table of Contents<!-- omit in toc -->
 - [Android Functions](#android-functions)
   - [Connect vs Enable](#connect-vs-enable)
   - [Disconnect vs Disable](#disconnect-vs-disable)
+  - [New to 3.2.0+](#new-to-320)
   - [New to 3.1.1+](#new-to-311)
   - [New to 3.0.0+](#new-to-300)
 - [Installation](#installation)
@@ -292,6 +293,17 @@ WifiWizard2.getConnectedNetworkID()
 
  - `GET_CONNECTED_NET_ID_ERROR` Unable to determine currently connected network ID (may not be connected)
 
+## New to 3.2.0+
+```javascript
+WifiWizard2.isLocationEnabled()
+```
+ - Check if Location (globally) is enabled or not
+
+```javascript
+WifiWizard2.switchToLocationSettings()
+```
+ - Switch to Location settings screen in Android
+
 ## New to 3.1.1+
 ```javascript
 WifiWizard2.resetBindAll()
@@ -445,12 +457,12 @@ WifiWizard2.enable(ssid, bindAll, waitForConnection)
 
 ## Master
 
-Run ```cordova plugin add https://github.com/tripflex/wifiwizard2```
+Run ```cordova plugin add https://github.com/tripflex/WiFiWizard2```
 
 To install from the master branch (latest on GitHub)
 
 To install a specific branch (add `#tag` replacing `tag` with tag from this repo, example:
-```cordova plugin add https://github.com/tripflex/wifiwizard2#v3.1.1```
+```cordova plugin add https://github.com/tripflex/wifiwizard2#v3.2.0```
 
 Find available tags here:
 https://github.com/tripflex/WifiWizard2/tags
@@ -465,9 +477,9 @@ Run ```cordova plugin add cordova-plugin-wifiwizard2```
 To install and use this plugin in a Meteor project, you have to specify the exact version from NPM repository:
 [https://www.npmjs.com/package/cordova-plugin-wifiwizard2](https://www.npmjs.com/package/cordova-plugin-wifiwizard2)
 
-As of April 4th 2019, the latest version is 3.1.1:
+As of XXX, the latest version is 3.2.0:
 
-```meteor add cordova:cordova-plugin-wifiwizard2@3.1.1```
+```meteor add cordova:cordova-plugin-wifiwizard2@3.2.0```
 
 # Errors/Rejections
 Methods now return formatted string errors as detailed below, instead of returning generic error messages.  This allows you to check yourself what specific error was returned, and customize the error message.
@@ -502,6 +514,11 @@ wifiConnection.then( result => {
 Apache 2.0
 
 # Changelog:
+**3.2.0** - TBD
+- Added check before calling `scan()`, `startScan()`, `getScanResults()`, `getConnectedSSID()`, `getConnectedBSSID()` if Location is globally enabled, ottherwise reject promise due to location being disabled
+- Added `isLocationEnabled()` method port from [Cordova Diagnostic Plugin](https://github.com/dpa99c/cordova-diagnostic-plugin) Issue #44
+- Added `switchToLocationSettings()` method to switch to Location Settings in Android
+  
 **3.1.1** - April 4, 2019
 - Fixed/Added location services check for Android 9+ for any method that utilises the getConnectionInfo method. Issue #71 (@arsenal942)
 - Move verifyWifiEnabled() to after methods that do not require wifi to be enabled. Issue #54 (@props seanyang1984)
@@ -509,6 +526,7 @@ Apache 2.0
 - Added `canConnectToRouter()`, `canConnectToInternet()`, `canPingWifiRouter()`, `isConnectedToInternet()` to iOS fn return not supported
 - Added `resetBindAll()` and `setBindAll()` for Android (props @saoron PR #74)
 - Use `JSONObject.NULL` instead of just `null` when scan results Android older than Marshmallow (props @seanyang1984) Issue #51
+- Added `isLocationEnabled()` method port from [Cordova Diagnostic Plugin](https://github.com/dpa99c/cordova-diagnostic-plugin) Issue #44
 
 **3.1.0** - August 28, 2018
 - Fixed/Added compatibility with iOS to connect to open network
