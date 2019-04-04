@@ -4,22 +4,25 @@ Table of Contents<!-- omit in toc -->
 ---
 - [About](#about)
 - [Basics](#basics)
-    - [Async Handling](#async-handling)
-    - [Demo Meteor Project](#demo-meteor-project)
-    - [Android IOS Permissions and Notes](#android-permissions-and-notes)
+  - [Async Handling](#async-handling)
+  - [Demo Meteor Project](#demo-meteor-project)
+  - [Android and IOS Permissions and Notes](#android-and-ios-permissions-and-notes)
+  - [IOS Notes](#ios-notes)
+  - [Ionic/Angular Notes](#ionicangular-notes)
 - [Global Functions](#global-functions)
 - [iOS Functions](#ios-functions)
 - [Android Functions](#android-functions)
-    - [Connect vs Enable](#connect-vs-enable)
-    - [Disconnect vs Disable](#disconnect-vs-disable)
-    - [New to 3.0.0+](#new-to-300)
+  - [Connect vs Enable](#connect-vs-enable)
+  - [Disconnect vs Disable](#disconnect-vs-disable)
+  - [New to 3.0.0+](#new-to-300)
 - [Installation](#installation)
-    - [Master](#master)
-    - [Releases](#releases)
-    - [Meteor](#meteor)
+  - [Master](#master)
+  - [Releases](#releases)
+  - [Meteor](#meteor)
 - [Errors/Rejections](#errorsrejections)
-    - [Generic **Thrown Errors**](#generic-thrown-errors)
+  - [Generic **Thrown Errors**](#generic-thrown-errors)
 - [Examples](#examples)
+  - [Ionic/Angular Example (User Provided)](#ionicangular-example-user-provided)
 - [Changelog:](#changelog)
 
 # About
@@ -73,6 +76,10 @@ Newer versions of Android will **not** allow you to `remove`, update existing co
 
 ## IOS Notes
 iOS 12 and later, enable the Access WiFi Information capability for your app in Xcode. When you enable this capability, Xcode automatically adds the Access WiFi Information entitlement to your entitlements file and App ID.
+
+## Ionic/Angular Notes
+This plugin does not have @ionic/native typings (yet), in order to use it add this to just below your import list on your service:
+`declare var WifiWizard2: any;`
 
 # Global Functions
 These are functions that can be used by both Android and iOS applications
@@ -440,8 +447,12 @@ In an upcoming release I may add easy ways to override generic messages, or set 
 # Examples
 
 Please see demo Meteor project for code examples:
-
 [https://github.com/tripflex/WifiWizard2Demo](https://github.com/tripflex/WifiWizard2Demo)
+
+## Ionic/Angular Example (User Provided)
+Props @13546777510 (Angelo Fan) has provided a basic Ionic/Angluar demo app:
+[https://github.com/13546777510/WifiWizard2-Demo](https://github.com/13546777510/WifiWizard2-Demo)
+See issue [#69](https://github.com/tripflex/WifiWizard2/issues/69) regarding this
 
 I recommend using [ES6 arrow functions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions) to maintain `this` reference.  This is especially useful if you're using Blaze and Meteor.
 
@@ -460,7 +471,10 @@ Apache 2.0
 
 # Changelog:
 **3.1.1** - April 4, 2019
-- Fixed/Added location services check for Android 9+ for any method that utilises the getConnectionInfo method. Issue #71 (@arsenal942) 
+- Fixed/Added location services check for Android 9+ for any method that utilises the getConnectionInfo method. Issue #71 (@arsenal942)
+- Move verifyWifiEnabled() to after methods that do not require wifi to be enabled. Issue #54 (@props seanyang1984)
+- Fix `isConnectedToInternet` and `canPingRouter` by making HTTP request to validate (instead of ping which didn't work)
+- Removed Android `pingCmd` method
 
 **3.1.0** - August 28, 2018
 - Fixed/Added compatibility with iOS to connect to open network

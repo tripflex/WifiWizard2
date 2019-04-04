@@ -48,10 +48,12 @@ import android.os.AsyncTask;
 import android.util.Log;
 import android.os.Build.VERSION;
 
+import java.net.URL;
 import java.net.InetAddress;
 import java.net.Inet4Address;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
+import java.net.HttpURLConnection;
 
 import java.net.UnknownHostException;
 
@@ -198,7 +200,7 @@ public class WifiWizard2 extends CordovaPlugin {
       callbackContext.success(result);
       return true;
     }
-    
+
     boolean wifiIsEnabled = verifyWifiEnabled();
     if (!wifiIsEnabled) {
       callbackContext.error("WIFI_NOT_ENABLED");
@@ -1509,7 +1511,7 @@ public class WifiWizard2 extends CordovaPlugin {
       NetworkInfo info = connectivityManager.getActiveNetworkInfo();
       if (info != null) {
         if (info.isConnected()) {
-          return pingCmd("8.8.8.8");
+          return isHTTPreachable("http://www.google.com/");
         }
       }
     }
@@ -1533,7 +1535,7 @@ public class WifiWizard2 extends CordovaPlugin {
       NetworkInfo info = connectivityManager.getActiveNetworkInfo();
 
       if (info != null && info.isConnected()) {
-        return pingCmd(ip);
+        return isHTTPreachable("http://" + ip + "/");
       } else {
         return false;
       }
@@ -1543,42 +1545,29 @@ public class WifiWizard2 extends CordovaPlugin {
   }
 
   /**
-   * Method to Ping  IP Address
-   *
-   * @param addr IP address you want to ping it
-   * @return true if the IP address is reachable
+   * Check if HTTP connection to URL is reachable
+   * 
+   * @param checkURL
+   * @return boolean
    */
-  public boolean pingCmd(String addr) {
-
+  public static boolean isHTTPreachable(String checkURL) {
     try {
+      // make a URL to a known source
+      URL url = new URL(checkURL);
 
-      String ping = "ping  -c 1 -W 3 " + addr;
-      Runtime run = Runtime.getRuntime();
-      Process pro = run.exec(ping);
+      // open a connection to that source
+      HttpURLConnection urlConnect = (HttpURLConnection) url.openConnection();
 
-      try {
-        pro.waitFor();
-      } catch (InterruptedException e) {
-        Log.e(TAG, "InterruptedException error.", e);
-      }
+      // trying to retrieve data from the source. If there
+      // is no connection, this line will fail
+      Object objData = urlConnect.getContent();
 
-      int exit = pro.exitValue();
-
-      Log.d(TAG, "pingCmd exitValue" + exit);
-
-      if (exit == 0) {
-        return true;
-      } else {
-        //ip address is not reachable
-        return false;
-      }
-    } catch(UnknownHostException e){
-      Log.d(TAG, "UnknownHostException: " + e.getMessage());
     } catch (Exception e) {
-      Log.d(TAG, e.getMessage());
+      e.printStackTrace();
+      return false;
     }
 
-    return false;
+    return true;
   }
 
   /**
