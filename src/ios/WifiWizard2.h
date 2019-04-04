@@ -22,5 +22,8 @@
 - (void)startScan:(CDVInvokedUrlCommand *)command;
 - (void)disconnect:(CDVInvokedUrlCommand *)command;
 - (void)isConnectedToInternet:(CDVInvokedUrlCommand *)command;
+- (void)canConnectToInternet:(CDVInvokedUrlCommand *)command;
+- (void)canPingWifiRouter:(CDVInvokedUrlCommand *)command;
+- (void)canConnectToRouter:(CDVInvokedUrlCommand *)command;
 
 @end
