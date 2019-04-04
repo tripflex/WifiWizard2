@@ -304,6 +304,16 @@ WifiWizard2.setBindAll()
  - Enable bindAll to WiFi network without disconnecting from WiFi
 
 ```javascript
+WifiWizard2.isLocationEnabled()
+```
+ - Check if Location setting is enabled (not if device has permissions, but if actual Location setting is enabled)
+
+**Thrown Errors**
+
+ - `LOCATION_NOT_ENABLED` Location is not enabled
+
+
+```javascript
 WifiWizard2.canConnectToInternet()
 ```
 
@@ -509,6 +519,7 @@ Apache 2.0
 - Added `canConnectToRouter()`, `canConnectToInternet()`, `canPingWifiRouter()`, `isConnectedToInternet()` to iOS fn return not supported
 - Added `resetBindAll()` and `setBindAll()` for Android (props @saoron PR #74)
 - Use `JSONObject.NULL` instead of just `null` when scan results Android older than Marshmallow (props @seanyang1984) Issue #51
+- Added `isLocationEnabled()` method port from [Cordova Diagnostic Plugin](https://github.com/dpa99c/cordova-diagnostic-plugin) Issue #44
 
 **3.1.0** - August 28, 2018
 - Fixed/Added compatibility with iOS to connect to open network
