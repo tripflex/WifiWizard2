@@ -255,15 +255,12 @@ public class WifiWizard2 extends CordovaPlugin {
       this.listNetworks(callbackContext);
     } else if (action.equals(DISCONNECT)) {
       this.disconnect(callbackContext);
-    } else if (action.equals(GET_CONNECTED_SSID)) {
-      this.getConnectedSSID(callbackContext);
-    } else if (action.equals(GET_CONNECTED_BSSID)) {
-      this.getConnectedBSSID(callbackContext);
     } else if (action.equals(GET_CONNECTED_NETWORKID)) {
       this.getConnectedNetworkID(callbackContext);
     }
 
-    if (!locationIsEnabled()) {
+    // Check if location is globally enabled (and API 32 or newer)
+    if ( !locationIsEnabled() && API_VERSION >= 23 ) {
       callbackContext.error("LOCATION_NOT_ENABLED");
       return true; // We still return true and handle error in JS
     }
@@ -275,6 +272,10 @@ public class WifiWizard2 extends CordovaPlugin {
       this.startScan(callbackContext);
     } else if (action.equals(GET_SCAN_RESULTS)) {
       this.getScanResults(callbackContext, data);
+    } else if (action.equals(GET_CONNECTED_SSID)) {
+      this.getConnectedSSID(callbackContext);
+    } else if (action.equals(GET_CONNECTED_BSSID)) {
+      this.getConnectedBSSID(callbackContext);
     } else {
       callbackContext.error("Incorrect action parameter: " + action);
       // The ONLY time to return FALSE is when action does not exist that was called
