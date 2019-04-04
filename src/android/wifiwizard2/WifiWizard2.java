@@ -85,8 +85,10 @@ public class WifiWizard2 extends CordovaPlugin {
   private static final String GET_WIFI_IP_ADDRESS = "getWifiIP";
   private static final String GET_WIFI_ROUTER_IP_ADDRESS = "getWifiRouterIP";
   private static final String CAN_PING_WIFI_ROUTER = "canPingWifiRouter";
-  private static final String GET_WIFI_IP_INFO = "getWifiIPInfo";
+  private static final String CAN_CONNECT_TO_ROUTER = "canConnectToRouter";
+  private static final String CAN_CONNECT_TO_INTERNET = "canConnectToInternet";
   private static final String IS_CONNECTED_TO_INTERNET = "isConnectedToInternet";
+  private static final String GET_WIFI_IP_INFO = "getWifiIPInfo";
 
   private static final int SCAN_RESULTS_CODE = 0; // Permissions request code for getScanResults()
   private static final int SCAN_CODE = 1; // Permissions request code for scan()
@@ -211,9 +213,13 @@ public class WifiWizard2 extends CordovaPlugin {
     if (action.equals(ADD_NETWORK)) {
       this.add(callbackContext, data);
     } else if (action.equals(IS_CONNECTED_TO_INTERNET)) {
-      this.isConnectedToInternet(callbackContext);
+      this.canConnectToInternet(callbackContext, true);
+    } else if (action.equals(CAN_CONNECT_TO_INTERNET)) {
+      this.canConnectToInternet(callbackContext, false);
     } else if (action.equals(CAN_PING_WIFI_ROUTER)) {
-      this.canPingWifiRouter(callbackContext);
+      this.canConnectToRouter(callbackContext, true);
+    } else if (action.equals(CAN_CONNECT_TO_ROUTER)) {
+      this.canConnectToRouter(callbackContext, false);
     } else if (action.equals(ENABLE_NETWORK)) {
       this.enable(callbackContext, data);
     } else if (action.equals(DISABLE_NETWORK)) {
@@ -727,7 +733,6 @@ public class WifiWizard2 extends CordovaPlugin {
    * @param networkIdToConnect
    * @return
    */
-
   private class ConnectAsync extends AsyncTask<Object, Void, String[]> {
     CallbackContext callbackContext;
     @Override
@@ -1248,52 +1253,6 @@ public class WifiWizard2 extends CordovaPlugin {
   }
 
   /**
-   * Check if device is connected to Internet
-   */
-  private boolean isConnectedToInternet(CallbackContext callbackContext) {
-
-    try {
-
-      if( hasInternetConnection() ){
-        // Send success as 1 to return true from Promise (handled in JS)
-        callbackContext.success("1");
-        return true;
-      } else {
-        callbackContext.success("0");
-        return false;
-      }
-
-    } catch (Exception e) {
-      callbackContext.error(e.getMessage());
-      Log.d(TAG, e.getMessage());
-      return false;
-    }
-  }
-
-  /**
-   * Check if we can ping the WiFi Router IP
-   */
-  private boolean canPingWifiRouter(CallbackContext callbackContext) {
-
-    try {
-
-      if( hasConnectionToRouter() ){
-        // Send success as 1 to return true from Promise (handled in JS)
-        callbackContext.success("1");
-        return true;
-      } else {
-        callbackContext.success("0");
-        return false;
-      }
-
-    } catch (Exception e) {
-      callbackContext.error(e.getMessage());
-      Log.d(TAG, e.getMessage());
-      return false;
-    }
-  }
-
-  /**
    * This method will check if WiFi is enabled, and enable it if not, waiting up to 10 seconds for
    * it to enable
    *
@@ -1502,16 +1461,70 @@ public class WifiWizard2 extends CordovaPlugin {
   }
 
   /**
+   * Check if device is connected to Internet
+   */
+  private boolean canConnectToInternet(CallbackContext callbackContext, boolean doPing) {
+
+    try {
+
+      if ( hasInternetConnection(doPing) ) {
+        // Send success as 1 to return true from Promise (handled in JS)
+        callbackContext.success("1");
+        return true;
+      } else {
+        callbackContext.success("0");
+        return false;
+      }
+
+    } catch (Exception e) {
+      callbackContext.error(e.getMessage());
+      Log.d(TAG, e.getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Check if we can conenct to router via HTTP connection
+   * 
+   * @param callbackContext
+   * @param doPing
+   * @return boolean
+   */
+  private boolean canConnectToRouter(CallbackContext callbackContext, boolean doPing) {
+
+    try {
+
+      if (hasConnectionToRouter(doPing)) {
+        // Send success as 1 to return true from Promise (handled in JS)
+        callbackContext.success("1");
+        return true;
+      } else {
+        callbackContext.success("0");
+        return false;
+      }
+
+    } catch (Exception e) {
+      callbackContext.error(e.getMessage());
+      Log.d(TAG, e.getMessage());
+      return false;
+    }
+  }
+
+  /**
    * Check if The Device Is Connected to Internet
    *
    * @return true if device connect to Internet or return false if not
    */
-  public boolean hasInternetConnection() {
+  public boolean hasInternetConnection(boolean doPing) {
     if (connectivityManager != null) {
       NetworkInfo info = connectivityManager.getActiveNetworkInfo();
       if (info != null) {
         if (info.isConnected()) {
-          return isHTTPreachable("http://www.google.com/");
+          if( doPing ){
+            return pingCmd("8.8.8.8");
+          } else {
+            return isHTTPreachable("http://www.google.com/");
+          }
         }
       }
     }
@@ -1522,7 +1535,7 @@ public class WifiWizard2 extends CordovaPlugin {
    * Check for connection to router by pinging router IP
    * @return
    */
-  public boolean hasConnectionToRouter() {
+  public boolean hasConnectionToRouter( boolean doPing ) {
 
     String ip = getWiFiRouterIP();
 
@@ -1535,7 +1548,12 @@ public class WifiWizard2 extends CordovaPlugin {
       NetworkInfo info = connectivityManager.getActiveNetworkInfo();
 
       if (info != null && info.isConnected()) {
-        return isHTTPreachable("http://" + ip + "/");
+
+        if( doPing ){
+          return pingCmd(ip);
+        } else {
+          return isHTTPreachable("http://" + ip + "/");
+        }
       } else {
         return false;
       }
@@ -1568,6 +1586,45 @@ public class WifiWizard2 extends CordovaPlugin {
     }
 
     return true;
+  }
+
+  /**
+   * Method to Ping IP Address
+   *
+   * @param addr IP address you want to ping it
+   * @return true if the IP address is reachable
+   */
+  public boolean pingCmd(String addr) {
+
+    try {
+
+      String ping = "ping  -c 1 -W 3 " + addr;
+      Runtime run = Runtime.getRuntime();
+      Process pro = run.exec(ping);
+
+      try {
+        pro.waitFor();
+      } catch (InterruptedException e) {
+        Log.e(TAG, "InterruptedException error.", e);
+      }
+
+      int exit = pro.exitValue();
+
+      Log.d(TAG, "pingCmd exitValue" + exit);
+
+      if (exit == 0) {
+        return true;
+      } else {
+        // ip address is not reachable
+        return false;
+      }
+    } catch (UnknownHostException e) {
+      Log.d(TAG, "UnknownHostException: " + e.getMessage());
+    } catch (Exception e) {
+      Log.d(TAG, e.getMessage());
+    }
+
+    return false;
   }
 
   /**
@@ -1678,7 +1735,7 @@ public class WifiWizard2 extends CordovaPlugin {
 
     try {
       maybeResetBindALL();
-      callbackContext.success("Netwrok was unbind");
+      callbackContext.success("Successfully reset BindALL");
     } catch (Exception e) {
       Log.e(TAG, "InterruptedException error.", e);
       callbackContext.error("ERROR_NO_BIND_ALL");
@@ -1696,7 +1753,7 @@ public class WifiWizard2 extends CordovaPlugin {
     try {
       int networkId = getConnectedNetId();
       registerBindALL(networkId);
-      callbackContext.success("Netwrok was bind");
+      callbackContext.success("Successfully bindAll to network");
     } catch (Exception e) {
       Log.e(TAG, "InterruptedException error.", e);
       callbackContext.error("ERROR_CANT_BIND_ALL");

@@ -483,6 +483,54 @@ var WifiWizard2 = {
     },
 
     /**
+     * Check if we can connect via HTTP current WiFi router IP address
+     * @returns {Promise<any>}
+     */
+    canConnectToRouter: function () {
+        return new Promise(function (resolve, reject) {
+
+            cordova.exec(
+                // Cordova can only return strings to JS, and the underlying plugin
+                // sends a "1" for true and "0" for false.
+                function (result) {
+
+                    if (result == "1") {
+                        resolve("CAN_CONNECT_TO_ROUTER");
+                    } else {
+                        reject("UNABLE_TO_CONNECT_TO_ROUTER");
+                    }
+
+                },
+                reject, "WifiWizard2", "canConnectToRouter", []
+            );
+
+        });
+    },
+    /**
+     * Check if current WiFi connection can connect to internet (checks connection to google.com)
+     * @returns {Promise<any>}
+     */
+    canConnectToInternet: function () {
+        return new Promise(function (resolve, reject) {
+
+            cordova.exec(
+                // Cordova can only return strings to JS, and the underlying plugin
+                // sends a "1" for true and "0" for false.
+                function (result) {
+
+                    if (result == "1") {
+                        resolve("IS_CONNECTED_TO_INTERNET");
+                    } else {
+                        reject("NOT_CONNECTED_TO_INTERNET");
+                    }
+
+                },
+                reject, "WifiWizard2", "canConnectToInternet", []
+            );
+
+        });
+    },
+    /**
      * Request ACCESS_FINE_LOCATION permission
      *
      * This permission is required by Android to return scan results, you can manually request it prior to running `scan`
