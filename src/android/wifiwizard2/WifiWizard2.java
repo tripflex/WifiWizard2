@@ -1141,7 +1141,7 @@ public class WifiWizard2 extends CordovaPlugin {
    * @return true if SSID found, false if not.
    */
   private boolean getWifiServiceInfo(CallbackContext callbackContext, boolean basicIdentifier) {    
-    if (API_VERSION >= 28 && !cordova.hasPermission(ACCESS_FINE_LOCATION)) { //Android 9 (Pie) or newer
+    if (API_VERSION >= 23 && !cordova.hasPermission(ACCESS_FINE_LOCATION)) { //Android 9 (Pie) or newer
       requestLocationPermission(WIFI_SERVICE_INFO_CODE);
       bssidRequested = basicIdentifier;
       return true;
