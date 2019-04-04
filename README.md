@@ -304,6 +304,16 @@ WifiWizard2.setBindAll()
  - Enable bindAll to WiFi network without disconnecting from WiFi
 
 ```javascript
+WifiWizard2.canConnectToInternet()
+```
+
+ - Returns boolean, true or false, if device is able to connect to https://www.google.com via HTTP connection (since ping is unreliable)
+ - Unknown errors will still be thrown like all other async functions
+ - If you called `connect` or `enable` and passed `true` for `bindAll`, your application will force the ping through wifi connection.
+ - If you did not pass `true` (or passed `false`) for `bindAll`, and the wifi does not have internet connection, Android Lollipop+ (API 21+) will use cell connection to ping (due to Android using cell connection when wifi does not have internet) [More Details](https://android-developers.googleblog.com/2016/07/connecting-your-app-to-wi-fi-device.html)
+
+
+```javascript
 WifiWizard2.canConnectToRouter()
 ```
  - As `canPingWifiRouter` is notoriously unreliable, this method uses HTTP connection to test if able to connect to router (as most routers should have web server running on port 80)
@@ -311,7 +321,6 @@ WifiWizard2.canConnectToRouter()
  - This is useful for testing to make sure that your Android app is able to connect to the private network after connecting to WiFi
  - This was added for testing the `bindAll` feature to support issues with Android Lollipop+ (API 21+) not routing calls through WiFi if WiFi does not have internet connection [See Android Blog](https://android-developers.googleblog.com/2016/07/connecting-your-app-to-wi-fi-device.html)
  - Attempts to connect router IP HTTP server on port 80 (example: `http://192.168.0.1/` where `192.168.0.1` is the automatically detected IP address)
-
 
 ## New to 3.0.0+
 ```javascript
@@ -499,6 +508,7 @@ Apache 2.0
 - Added `canConnectToRouter()` and `canConnectToInternet()` to use HTTP to test connection (since ping is notoriously unreliable)
 - Added `canConnectToRouter()`, `canConnectToInternet()`, `canPingWifiRouter()`, `isConnectedToInternet()` to iOS fn return not supported
 - Added `resetBindAll()` and `setBindAll()` for Android (props @saoron PR #74)
+- Use `JSONObject.NULL` instead of just `null` when scan results Android older than Marshmallow (props @seanyang1984) Issue #51
 
 **3.1.0** - August 28, 2018
 - Fixed/Added compatibility with iOS to connect to open network

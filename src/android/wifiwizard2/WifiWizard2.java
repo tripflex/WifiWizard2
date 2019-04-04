@@ -998,9 +998,9 @@ public class WifiWizard2 extends CordovaPlugin {
             lvl.put("centerFreq0", scan.centerFreq0);
             lvl.put("centerFreq1", scan.centerFreq1);
           } else {
-            lvl.put("channelWidth", null);
-            lvl.put("centerFreq0", null);
-            lvl.put("centerFreq1", null);
+            lvl.put("channelWidth", JSONObject.NULL);
+            lvl.put("centerFreq0", JSONObject.NULL);
+            lvl.put("centerFreq1", JSONObject.NULL);
           }
 
           returnList.put(lvl);
