@@ -14,6 +14,7 @@ Table of Contents<!-- omit in toc -->
 - [Android Functions](#android-functions)
   - [Connect vs Enable](#connect-vs-enable)
   - [Disconnect vs Disable](#disconnect-vs-disable)
+  - [New to 3.1.1+](#new-to-311)
   - [New to 3.0.0+](#new-to-300)
 - [Installation](#installation)
   - [Master](#master)
@@ -291,21 +292,33 @@ WifiWizard2.getConnectedNetworkID()
 
  - `GET_CONNECTED_NET_ID_ERROR` Unable to determine currently connected network ID (may not be connected)
 
+## New to 3.1.1+
+```javascript
+WifiWizard2.resetBindAll()
+```
+ - Disable bindAll to WiFi network without disconnecting from WiFi
+
+```javascript
+WifiWizard2.setBindAll()
+```
+ - Enable bindAll to WiFi network without disconnecting from WiFi
+
+```javascript
+WifiWizard2.canConnectToRouter()
+```
+ - As `canPingWifiRouter` is notoriously unreliable, this method uses HTTP connection to test if able to connect to router (as most routers should have web server running on port 80)
+ - Unknown errors will still be thrown like all other async functions
+ - This is useful for testing to make sure that your Android app is able to connect to the private network after connecting to WiFi
+ - This was added for testing the `bindAll` feature to support issues with Android Lollipop+ (API 21+) not routing calls through WiFi if WiFi does not have internet connection [See Android Blog](https://android-developers.googleblog.com/2016/07/connecting-your-app-to-wi-fi-device.html)
+ - Attempts to connect router IP HTTP server on port 80 (example: `http://192.168.0.1/` where `192.168.0.1` is the automatically detected IP address)
+
+
 ## New to 3.0.0+
 ```javascript
 WifiWizard2.isConnectedToInternet()
 ```
 
  - Returns boolean, true or false, if device is able to ping 8.8.8.8
- - Unknown errors will still be thrown like all other async functions
- - If you called `connect` or `enable` and passed `true` for `bindAll`, your application will force the ping through wifi connection.
- - If you did not pass `true` (or passed `false`) for `bindAll`, and the wifi does not have internet connection, Android Lollipop+ (API 21+) will use cell connection to ping (due to Android using cell connection when wifi does not have internet) [More Details](https://android-developers.googleblog.com/2016/07/connecting-your-app-to-wi-fi-device.html)
-
-```javascript
-WifiWizard2.canConnectToInternet()
-```
- - Since 3.1.1
- - Returns boolean, true or false, if device is able to open HTTP connection to `https://www.google.com`
  - Unknown errors will still be thrown like all other async functions
  - If you called `connect` or `enable` and passed `true` for `bindAll`, your application will force the ping through wifi connection.
  - If you did not pass `true` (or passed `false`) for `bindAll`, and the wifi does not have internet connection, Android Lollipop+ (API 21+) will use cell connection to ping (due to Android using cell connection when wifi does not have internet) [More Details](https://android-developers.googleblog.com/2016/07/connecting-your-app-to-wi-fi-device.html)
@@ -319,16 +332,6 @@ WifiWizard2.canPingWifiRouter()
  - Unknown errors will still be thrown like all other async functions
  - This is useful for testing to make sure that your Android app is able to connect to the private network after connecting to WiFi
  - This was added for testing the `bindAll` feature to support issues with Android Lollipop+ (API 21+) not routing calls through WiFi if WiFi does not have internet connection [See Android Blog](https://android-developers.googleblog.com/2016/07/connecting-your-app-to-wi-fi-device.html)
-
-```javascript
-WifiWizard2.canConnectToRouter()
-```
- - Since 3.1.1+
- - As `canPingWifiRouter` is notoriously unreliable, this method uses HTTP connection to test if able to connect to router (as most routers should have web server running on port 80)
- - Unknown errors will still be thrown like all other async functions
- - This is useful for testing to make sure that your Android app is able to connect to the private network after connecting to WiFi
- - This was added for testing the `bindAll` feature to support issues with Android Lollipop+ (API 21+) not routing calls through WiFi if WiFi does not have internet connection [See Android Blog](https://android-developers.googleblog.com/2016/07/connecting-your-app-to-wi-fi-device.html)
- - Attempts to connect router IP HTTP server on port 80 (example: `http://192.168.0.1/` where `192.168.0.1` is the automatically detected IP address)
 
 ```javascript
 WifiWizard2.enableWifi()
@@ -494,6 +497,8 @@ Apache 2.0
 - Fixed/Added location services check for Android 9+ for any method that utilises the getConnectionInfo method. Issue #71 (@arsenal942)
 - Move verifyWifiEnabled() to after methods that do not require wifi to be enabled. Issue #54 (@props seanyang1984)
 - Added `canConnectToRouter()` and `canConnectToInternet()` to use HTTP to test connection (since ping is notoriously unreliable)
+- Added `canConnectToRouter()`, `canConnectToInternet()`, `canPingWifiRouter()`, `isConnectedToInternet()` to iOS fn return not supported
+- Added `resetBindAll()` and `setBindAll()` for Android (props @saoron PR #74)
 
 **3.1.0** - August 28, 2018
 - Fixed/Added compatibility with iOS to connect to open network
