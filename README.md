@@ -1,25 +1,29 @@
-# WiFiWizard2 - 3.1.0<!-- omit in toc -->
+# WiFiWizard2 - 3.1.1<!-- omit in toc -->
 
 Table of Contents<!-- omit in toc -->
 ---
 - [About](#about)
 - [Basics](#basics)
-    - [Async Handling](#async-handling)
-    - [Demo Meteor Project](#demo-meteor-project)
-    - [Android IOS Permissions and Notes](#android-permissions-and-notes)
+  - [Async Handling](#async-handling)
+  - [Demo Meteor Project](#demo-meteor-project)
+  - [Android and IOS Permissions and Notes](#android-and-ios-permissions-and-notes)
+  - [IOS Notes](#ios-notes)
+  - [Ionic/Angular Notes](#ionicangular-notes)
 - [Global Functions](#global-functions)
 - [iOS Functions](#ios-functions)
 - [Android Functions](#android-functions)
-    - [Connect vs Enable](#connect-vs-enable)
-    - [Disconnect vs Disable](#disconnect-vs-disable)
-    - [New to 3.0.0+](#new-to-300)
+  - [Connect vs Enable](#connect-vs-enable)
+  - [Disconnect vs Disable](#disconnect-vs-disable)
+  - [New to 3.1.1+](#new-to-311)
+  - [New to 3.0.0+](#new-to-300)
 - [Installation](#installation)
-    - [Master](#master)
-    - [Releases](#releases)
-    - [Meteor](#meteor)
+  - [Master](#master)
+  - [Releases](#releases)
+  - [Meteor](#meteor)
 - [Errors/Rejections](#errorsrejections)
-    - [Generic **Thrown Errors**](#generic-thrown-errors)
+  - [Generic **Thrown Errors**](#generic-thrown-errors)
 - [Examples](#examples)
+  - [Ionic/Angular Example (User Provided)](#ionicangular-example-user-provided)
 - [Changelog:](#changelog)
 
 # About
@@ -73,6 +77,10 @@ Newer versions of Android will **not** allow you to `remove`, update existing co
 
 ## IOS Notes
 iOS 12 and later, enable the Access WiFi Information capability for your app in Xcode. When you enable this capability, Xcode automatically adds the Access WiFi Information entitlement to your entitlements file and App ID.
+
+## Ionic/Angular Notes
+This plugin does not have @ionic/native typings (yet), in order to use it add this to just below your import list on your service:
+`declare var WifiWizard2: any;`
 
 # Global Functions
 These are functions that can be used by both Android and iOS applications
@@ -284,12 +292,42 @@ WifiWizard2.getConnectedNetworkID()
 
  - `GET_CONNECTED_NET_ID_ERROR` Unable to determine currently connected network ID (may not be connected)
 
+## New to 3.1.1+
+```javascript
+WifiWizard2.resetBindAll()
+```
+ - Disable bindAll to WiFi network without disconnecting from WiFi
+
+```javascript
+WifiWizard2.setBindAll()
+```
+ - Enable bindAll to WiFi network without disconnecting from WiFi
+
+```javascript
+WifiWizard2.canConnectToInternet()
+```
+
+ - Returns boolean, true or false, if device is able to connect to https://www.google.com via HTTP connection (since ping is unreliable)
+ - Unknown errors will still be thrown like all other async functions
+ - If you called `connect` or `enable` and passed `true` for `bindAll`, your application will force the ping through wifi connection.
+ - If you did not pass `true` (or passed `false`) for `bindAll`, and the wifi does not have internet connection, Android Lollipop+ (API 21+) will use cell connection to ping (due to Android using cell connection when wifi does not have internet) [More Details](https://android-developers.googleblog.com/2016/07/connecting-your-app-to-wi-fi-device.html)
+
+
+```javascript
+WifiWizard2.canConnectToRouter()
+```
+ - As `canPingWifiRouter` is notoriously unreliable, this method uses HTTP connection to test if able to connect to router (as most routers should have web server running on port 80)
+ - Unknown errors will still be thrown like all other async functions
+ - This is useful for testing to make sure that your Android app is able to connect to the private network after connecting to WiFi
+ - This was added for testing the `bindAll` feature to support issues with Android Lollipop+ (API 21+) not routing calls through WiFi if WiFi does not have internet connection [See Android Blog](https://android-developers.googleblog.com/2016/07/connecting-your-app-to-wi-fi-device.html)
+ - Attempts to connect router IP HTTP server on port 80 (example: `http://192.168.0.1/` where `192.168.0.1` is the automatically detected IP address)
+
 ## New to 3.0.0+
 ```javascript
 WifiWizard2.isConnectedToInternet()
 ```
 
- - Returns boolean, true or false, if device is able to ping `8.8.8.8`
+ - Returns boolean, true or false, if device is able to ping 8.8.8.8
  - Unknown errors will still be thrown like all other async functions
  - If you called `connect` or `enable` and passed `true` for `bindAll`, your application will force the ping through wifi connection.
  - If you did not pass `true` (or passed `false`) for `bindAll`, and the wifi does not have internet connection, Android Lollipop+ (API 21+) will use cell connection to ping (due to Android using cell connection when wifi does not have internet) [More Details](https://android-developers.googleblog.com/2016/07/connecting-your-app-to-wi-fi-device.html)
@@ -299,6 +337,7 @@ WifiWizard2.canPingWifiRouter()
 ```
 
  - Returns boolean, true or false, if device is able to ping the connected WiFi router IP (obtained from DHCP info)
+ - Version 3.1.1+ uses HTTP connection to test if able to connect to router (as ping previous did not work)
  - Unknown errors will still be thrown like all other async functions
  - This is useful for testing to make sure that your Android app is able to connect to the private network after connecting to WiFi
  - This was added for testing the `bindAll` feature to support issues with Android Lollipop+ (API 21+) not routing calls through WiFi if WiFi does not have internet connection [See Android Blog](https://android-developers.googleblog.com/2016/07/connecting-your-app-to-wi-fi-device.html)
@@ -411,7 +450,7 @@ Run ```cordova plugin add https://github.com/tripflex/wifiwizard2```
 To install from the master branch (latest on GitHub)
 
 To install a specific branch (add `#tag` replacing `tag` with tag from this repo, example:
-```cordova plugin add https://github.com/tripflex/wifiwizard2#v3.1.0```
+```cordova plugin add https://github.com/tripflex/wifiwizard2#v3.1.1```
 
 Find available tags here:
 https://github.com/tripflex/WifiWizard2/tags
@@ -426,9 +465,9 @@ Run ```cordova plugin add cordova-plugin-wifiwizard2```
 To install and use this plugin in a Meteor project, you have to specify the exact version from NPM repository:
 [https://www.npmjs.com/package/cordova-plugin-wifiwizard2](https://www.npmjs.com/package/cordova-plugin-wifiwizard2)
 
-As of 8/28/2018, the latest version is 3.1.0:
+As of April 4th 2019, the latest version is 3.1.1:
 
-```meteor add cordova:cordova-plugin-wifiwizard2@3.1.0```
+```meteor add cordova:cordova-plugin-wifiwizard2@3.1.1```
 
 # Errors/Rejections
 Methods now return formatted string errors as detailed below, instead of returning generic error messages.  This allows you to check yourself what specific error was returned, and customize the error message.
@@ -440,8 +479,12 @@ In an upcoming release I may add easy ways to override generic messages, or set 
 # Examples
 
 Please see demo Meteor project for code examples:
-
 [https://github.com/tripflex/WifiWizard2Demo](https://github.com/tripflex/WifiWizard2Demo)
+
+## Ionic/Angular Example (User Provided)
+Props @13546777510 (Angelo Fan) has provided a basic Ionic/Angluar demo app:
+[https://github.com/13546777510/WifiWizard2-Demo](https://github.com/13546777510/WifiWizard2-Demo)
+See issue [#69](https://github.com/tripflex/WifiWizard2/issues/69) regarding this
 
 I recommend using [ES6 arrow functions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions) to maintain `this` reference.  This is especially useful if you're using Blaze and Meteor.
 
@@ -459,6 +502,13 @@ wifiConnection.then( result => {
 Apache 2.0
 
 # Changelog:
+**3.1.1** - April 4, 2019
+- Fixed/Added location services check for Android 9+ for any method that utilises the getConnectionInfo method. Issue #71 (@arsenal942)
+- Move verifyWifiEnabled() to after methods that do not require wifi to be enabled. Issue #54 (@props seanyang1984)
+- Added `canConnectToRouter()` and `canConnectToInternet()` to use HTTP to test connection (since ping is notoriously unreliable)
+- Added `canConnectToRouter()`, `canConnectToInternet()`, `canPingWifiRouter()`, `isConnectedToInternet()` to iOS fn return not supported
+- Added `resetBindAll()` and `setBindAll()` for Android (props @saoron PR #74)
+- Use `JSONObject.NULL` instead of just `null` when scan results Android older than Marshmallow (props @seanyang1984) Issue #51
 
 **3.1.0** - August 28, 2018
 - Fixed/Added compatibility with iOS to connect to open network

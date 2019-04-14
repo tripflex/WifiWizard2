@@ -48,10 +48,12 @@ import android.os.AsyncTask;
 import android.util.Log;
 import android.os.Build.VERSION;
 
+import java.net.URL;
 import java.net.InetAddress;
 import java.net.Inet4Address;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
+import java.net.HttpURLConnection;
 
 import java.net.UnknownHostException;
 
@@ -83,18 +85,25 @@ public class WifiWizard2 extends CordovaPlugin {
   private static final String GET_WIFI_IP_ADDRESS = "getWifiIP";
   private static final String GET_WIFI_ROUTER_IP_ADDRESS = "getWifiRouterIP";
   private static final String CAN_PING_WIFI_ROUTER = "canPingWifiRouter";
-  private static final String GET_WIFI_IP_INFO = "getWifiIPInfo";
+  private static final String CAN_CONNECT_TO_ROUTER = "canConnectToRouter";
+  private static final String CAN_CONNECT_TO_INTERNET = "canConnectToInternet";
   private static final String IS_CONNECTED_TO_INTERNET = "isConnectedToInternet";
   private static final String RESET_BIND_ALL = "resetBindAll";
   private static final String SET_BIND_ALL = "setBindAll";
+  private static final String GET_WIFI_IP_INFO = "getWifiIPInfo";
+
 
   
   private static final int SCAN_RESULTS_CODE = 0; // Permissions request code for getScanResults()
   private static final int SCAN_CODE = 1; // Permissions request code for scan()
   private static final int LOCATION_REQUEST_CODE = 2; // Permissions request code
+  private static final int WIFI_SERVICE_INFO_CODE = 3;
   private static final String ACCESS_FINE_LOCATION = android.Manifest.permission.ACCESS_FINE_LOCATION;
 
   private static int LAST_NET_ID = -1;
+  // This is for when SSID or BSSID is requested but permissions have not been granted for location
+  // we store whether or not BSSID was requested, to recall the getWifiServiceInfo fn after permissions are granted
+  private static boolean bssidRequested = false;
 
   private WifiManager wifiManager;
   private CallbackContext callbackContext;
@@ -148,7 +157,6 @@ public class WifiWizard2 extends CordovaPlugin {
   public boolean execute(String action, JSONArray data, CallbackContext callbackContext)
       throws JSONException {
 
-    boolean wifiIsEnabled = verifyWifiEnabled();
     this.callbackContext = callbackContext;
     this.passedData = data;
 
@@ -199,6 +207,7 @@ public class WifiWizard2 extends CordovaPlugin {
       return true;
     }
 
+    boolean wifiIsEnabled = verifyWifiEnabled();
     if (!wifiIsEnabled) {
       callbackContext.error("WIFI_NOT_ENABLED");
       return true; // Even though enable wifi failed, we still return true and handle error in callback
@@ -208,9 +217,13 @@ public class WifiWizard2 extends CordovaPlugin {
     if (action.equals(ADD_NETWORK)) {
       this.add(callbackContext, data);
     } else if (action.equals(IS_CONNECTED_TO_INTERNET)) {
-      this.isConnectedToInternet(callbackContext);
+      this.canConnectToInternet(callbackContext, true);
+    } else if (action.equals(CAN_CONNECT_TO_INTERNET)) {
+      this.canConnectToInternet(callbackContext, false);
     } else if (action.equals(CAN_PING_WIFI_ROUTER)) {
-      this.canPingWifiRouter(callbackContext);
+      this.canConnectToRouter(callbackContext, true);
+    } else if (action.equals(CAN_CONNECT_TO_ROUTER)) {
+      this.canConnectToRouter(callbackContext, false);
     } else if (action.equals(ENABLE_NETWORK)) {
       this.enable(callbackContext, data);
     } else if (action.equals(DISABLE_NETWORK)) {
@@ -728,7 +741,6 @@ public class WifiWizard2 extends CordovaPlugin {
    * @param networkIdToConnect
    * @return
    */
-
   private class ConnectAsync extends AsyncTask<Object, Void, String[]> {
     CallbackContext callbackContext;
     @Override
@@ -994,9 +1006,9 @@ public class WifiWizard2 extends CordovaPlugin {
             lvl.put("centerFreq0", scan.centerFreq0);
             lvl.put("centerFreq1", scan.centerFreq1);
           } else {
-            lvl.put("channelWidth", null);
-            lvl.put("centerFreq0", null);
-            lvl.put("centerFreq1", null);
+            lvl.put("channelWidth", JSONObject.NULL);
+            lvl.put("centerFreq0", JSONObject.NULL);
+            lvl.put("centerFreq1", JSONObject.NULL);
           }
 
           returnList.put(lvl);
@@ -1136,41 +1148,46 @@ public class WifiWizard2 extends CordovaPlugin {
    * @param basicIdentifier A flag to get BSSID if true or SSID if false.
    * @return true if SSID found, false if not.
    */
-  private boolean getWifiServiceInfo(CallbackContext callbackContext, boolean basicIdentifier) {
-
-    WifiInfo info = wifiManager.getConnectionInfo();
-
-    if (info == null) {
-      callbackContext.error("UNABLE_TO_READ_WIFI_INFO");
-      return false;
-    }
-
-    // Only return SSID or BSSID when actually connected to a network
-    SupplicantState state = info.getSupplicantState();
-    if (!state.equals(SupplicantState.COMPLETED)) {
-      callbackContext.error("CONNECTION_NOT_COMPLETED");
-      return false;
-    }
-
-    String serviceInfo;
-    if (basicIdentifier) {
-      serviceInfo = info.getBSSID();
+  private boolean getWifiServiceInfo(CallbackContext callbackContext, boolean basicIdentifier) {    
+    if (API_VERSION >= 23 && !cordova.hasPermission(ACCESS_FINE_LOCATION)) { //Android 9 (Pie) or newer
+      requestLocationPermission(WIFI_SERVICE_INFO_CODE);
+      bssidRequested = basicIdentifier;
+      return true;
     } else {
-      serviceInfo = info.getSSID();
-    }
+      WifiInfo info = wifiManager.getConnectionInfo();
 
-    if (serviceInfo == null || serviceInfo.isEmpty() || serviceInfo == "0x") {
-      callbackContext.error("WIFI_INFORMATION_EMPTY");
-      return false;
+      if (info == null) {
+        callbackContext.error("UNABLE_TO_READ_WIFI_INFO");
+        return false;
+      }
+  
+      // Only return SSID or BSSID when actually connected to a network
+      SupplicantState state = info.getSupplicantState();
+      if (!state.equals(SupplicantState.COMPLETED)) {
+        callbackContext.error("CONNECTION_NOT_COMPLETED");
+        return false;
+      }
+  
+      String serviceInfo;
+      if (basicIdentifier) {
+        serviceInfo = info.getBSSID();
+      } else {
+        serviceInfo = info.getSSID();
+      }
+  
+      if (serviceInfo == null || serviceInfo.isEmpty() || serviceInfo == "0x") {
+        callbackContext.error("WIFI_INFORMATION_EMPTY");
+        return false;
+      }
+  
+      // http://developer.android.com/reference/android/net/wifi/WifiInfo.html#getSSID()
+      if (serviceInfo.startsWith("\"") && serviceInfo.endsWith("\"")) {
+        serviceInfo = serviceInfo.substring(1, serviceInfo.length() - 1);
+      }
+  
+      callbackContext.success(serviceInfo);
+      return true;
     }
-
-    // http://developer.android.com/reference/android/net/wifi/WifiInfo.html#getSSID()
-    if (serviceInfo.startsWith("\"") && serviceInfo.endsWith("\"")) {
-      serviceInfo = serviceInfo.substring(1, serviceInfo.length() - 1);
-    }
-
-    callbackContext.success(serviceInfo);
-    return true;
   }
 
   /**
@@ -1239,52 +1256,6 @@ public class WifiWizard2 extends CordovaPlugin {
       return true;
     } else {
       callbackContext.error("ERROR_SETWIFIENABLED");
-      return false;
-    }
-  }
-
-  /**
-   * Check if device is connected to Internet
-   */
-  private boolean isConnectedToInternet(CallbackContext callbackContext) {
-
-    try {
-
-      if( hasInternetConnection() ){
-        // Send success as 1 to return true from Promise (handled in JS)
-        callbackContext.success("1");
-        return true;
-      } else {
-        callbackContext.success("0");
-        return false;
-      }
-
-    } catch (Exception e) {
-      callbackContext.error(e.getMessage());
-      Log.d(TAG, e.getMessage());
-      return false;
-    }
-  }
-
-  /**
-   * Check if we can ping the WiFi Router IP
-   */
-  private boolean canPingWifiRouter(CallbackContext callbackContext) {
-
-    try {
-
-      if( hasConnectionToRouter() ){
-        // Send success as 1 to return true from Promise (handled in JS)
-        callbackContext.success("1");
-        return true;
-      } else {
-        callbackContext.success("0");
-        return false;
-      }
-
-    } catch (Exception e) {
-      callbackContext.error(e.getMessage());
-      Log.d(TAG, e.getMessage());
       return false;
     }
   }
@@ -1465,16 +1436,18 @@ public class WifiWizard2 extends CordovaPlugin {
 
     switch (requestCode) {
       case SCAN_RESULTS_CODE:
-        getScanResults(callbackContext, passedData ); // Call method again after permissions approved
+        getScanResults(callbackContext, passedData); // Call method again after permissions approved
         break;
       case SCAN_CODE:
-        scan(callbackContext, passedData ); // Call method again after permissions approved
+        scan(callbackContext, passedData); // Call method again after permissions approved
         break;
       case LOCATION_REQUEST_CODE:
         callbackContext.success("PERMISSION_GRANTED");
         break;
+      case WIFI_SERVICE_INFO_CODE:
+        getWifiServiceInfo(callbackContext, bssidRequested);
+        break;
     }
-
   }
 
   /**
@@ -1496,16 +1469,70 @@ public class WifiWizard2 extends CordovaPlugin {
   }
 
   /**
+   * Check if device is connected to Internet
+   */
+  private boolean canConnectToInternet(CallbackContext callbackContext, boolean doPing) {
+
+    try {
+
+      if ( hasInternetConnection(doPing) ) {
+        // Send success as 1 to return true from Promise (handled in JS)
+        callbackContext.success("1");
+        return true;
+      } else {
+        callbackContext.success("0");
+        return false;
+      }
+
+    } catch (Exception e) {
+      callbackContext.error(e.getMessage());
+      Log.d(TAG, e.getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Check if we can conenct to router via HTTP connection
+   * 
+   * @param callbackContext
+   * @param doPing
+   * @return boolean
+   */
+  private boolean canConnectToRouter(CallbackContext callbackContext, boolean doPing) {
+
+    try {
+
+      if (hasConnectionToRouter(doPing)) {
+        // Send success as 1 to return true from Promise (handled in JS)
+        callbackContext.success("1");
+        return true;
+      } else {
+        callbackContext.success("0");
+        return false;
+      }
+
+    } catch (Exception e) {
+      callbackContext.error(e.getMessage());
+      Log.d(TAG, e.getMessage());
+      return false;
+    }
+  }
+
+  /**
    * Check if The Device Is Connected to Internet
    *
    * @return true if device connect to Internet or return false if not
    */
-  public boolean hasInternetConnection() {
+  public boolean hasInternetConnection(boolean doPing) {
     if (connectivityManager != null) {
       NetworkInfo info = connectivityManager.getActiveNetworkInfo();
       if (info != null) {
         if (info.isConnected()) {
-          return pingCmd("8.8.8.8");
+          if( doPing ){
+            return pingCmd("8.8.8.8");
+          } else {
+            return isHTTPreachable("http://www.google.com/");
+          }
         }
       }
     }
@@ -1516,7 +1543,7 @@ public class WifiWizard2 extends CordovaPlugin {
    * Check for connection to router by pinging router IP
    * @return
    */
-  public boolean hasConnectionToRouter() {
+  public boolean hasConnectionToRouter( boolean doPing ) {
 
     String ip = getWiFiRouterIP();
 
@@ -1529,7 +1556,12 @@ public class WifiWizard2 extends CordovaPlugin {
       NetworkInfo info = connectivityManager.getActiveNetworkInfo();
 
       if (info != null && info.isConnected()) {
-        return pingCmd(ip);
+
+        if( doPing ){
+          return pingCmd(ip);
+        } else {
+          return isHTTPreachable("http://" + ip + "/");
+        }
       } else {
         return false;
       }
@@ -1539,7 +1571,33 @@ public class WifiWizard2 extends CordovaPlugin {
   }
 
   /**
-   * Method to Ping  IP Address
+   * Check if HTTP connection to URL is reachable
+   * 
+   * @param checkURL
+   * @return boolean
+   */
+  public static boolean isHTTPreachable(String checkURL) {
+    try {
+      // make a URL to a known source
+      URL url = new URL(checkURL);
+
+      // open a connection to that source
+      HttpURLConnection urlConnect = (HttpURLConnection) url.openConnection();
+
+      // trying to retrieve data from the source. If there
+      // is no connection, this line will fail
+      Object objData = urlConnect.getContent();
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Method to Ping IP Address
    *
    * @param addr IP address you want to ping it
    * @return true if the IP address is reachable
@@ -1565,10 +1623,10 @@ public class WifiWizard2 extends CordovaPlugin {
       if (exit == 0) {
         return true;
       } else {
-        //ip address is not reachable
+        // ip address is not reachable
         return false;
       }
-    } catch(UnknownHostException e){
+    } catch (UnknownHostException e) {
       Log.d(TAG, "UnknownHostException: " + e.getMessage());
     } catch (Exception e) {
       Log.d(TAG, e.getMessage());
@@ -1685,7 +1743,7 @@ public class WifiWizard2 extends CordovaPlugin {
 
     try {
       maybeResetBindALL();
-      callbackContext.success("Netwrok was unbind");
+      callbackContext.success("Successfully reset BindALL");
     } catch (Exception e) {
       Log.e(TAG, "InterruptedException error.", e);
       callbackContext.error("ERROR_NO_BIND_ALL");
@@ -1703,7 +1761,7 @@ public class WifiWizard2 extends CordovaPlugin {
     try {
       int networkId = getConnectedNetId();
       registerBindALL(networkId);
-      callbackContext.success("Netwrok was bind");
+      callbackContext.success("Successfully bindAll to network");
     } catch (Exception e) {
       Log.e(TAG, "InterruptedException error.", e);
       callbackContext.error("ERROR_CANT_BIND_ALL");
