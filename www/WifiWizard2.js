@@ -562,6 +562,7 @@ var WifiWizard2 = {
             wifiConfig.auth = {
                 algorithm: "NONE"
             };
+	    wifiConfig.SSID = wifiConfig.SSID + "NONE";
         } else if (algorithm === "WPA") {
             wifiConfig.auth = {
                 algorithm: algorithm,
