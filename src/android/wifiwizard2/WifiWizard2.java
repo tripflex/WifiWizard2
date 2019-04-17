@@ -1251,7 +1251,7 @@ public class WifiWizard2 extends CordovaPlugin {
               return "WEP";
           case SECURITY_PSK:
               if (config.allowedProtocols.get(WifiConfiguration.Protocol.RSN))
-                  return "WPA2";
+                  return "WPA"; //Normally WPA2 but since we map everything to WPA it will be WPA
               else
                   return "WPA";
           default:
