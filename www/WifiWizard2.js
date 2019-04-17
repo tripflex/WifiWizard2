@@ -162,7 +162,7 @@ var WifiWizard2 = {
             WifiWizard2.add(wifiConfig).then(function (newNetID) {
 
                 // Successfully updated or added wifiConfig
-                cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID), bindAll, algorithm || ""]);
+                cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID), bindAll, wifiConfig.auth.algorithm || ""]);
 
                 // Catch error adding/updating network
             }).catch(function (error) {
