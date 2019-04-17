@@ -173,7 +173,7 @@ var WifiWizard2 = {
 
                     // This error above should only be returned when the add method was able to pull a network ID (as it tries to update instead of adding)
                     // Lets go ahead and attempt to connect to that SSID (using the existing wifi configuration)
-                    cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID), bindAll, algorithm]);
+                    cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID), bindAll, wifiConfig.auth.algorithm || ""]);
 
                 } else {
 
