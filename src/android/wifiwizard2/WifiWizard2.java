@@ -393,7 +393,7 @@ public class WifiWizard2 extends CordovaPlugin {
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
 
-        wifi.networkId = ssidToNetworkId(newSSID);
+        wifi.networkId = ssidToNetworkId(newSSID, authType);
 
       } else if (authType.equals("WEP")) {
        /**
@@ -425,7 +425,7 @@ public class WifiWizard2 extends CordovaPlugin {
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
 
-        wifi.networkId = ssidToNetworkId(newSSID);
+        wifi.networkId = ssidToNetworkId(newSSID, authType);
 
       } else if (authType.equals("NONE")) {
        /**
@@ -437,7 +437,7 @@ public class WifiWizard2 extends CordovaPlugin {
         */
         wifi.SSID = newSSID;
         wifi.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
-        wifi.networkId = ssidToNetworkId(newSSID);
+        wifi.networkId = ssidToNetworkId(newSSID, authType);
 
       } else {
 
@@ -518,7 +518,7 @@ public class WifiWizard2 extends CordovaPlugin {
       return;
     }
 
-    int networkIdToEnable = ssidToNetworkId(ssidToEnable);
+    int networkIdToEnable = ssidToNetworkId(ssidToEnable, "");
 
     try {
 
@@ -585,7 +585,7 @@ public class WifiWizard2 extends CordovaPlugin {
       return false;
     }
 
-    int networkIdToDisconnect = ssidToNetworkId(ssidToDisable);
+    int networkIdToDisconnect = ssidToNetworkId(ssidToDisable, "");
 
     try {
 
@@ -632,7 +632,7 @@ public class WifiWizard2 extends CordovaPlugin {
     try {
       String ssidToDisconnect = data.getString(0);
 
-      int networkIdToRemove = ssidToNetworkId(ssidToDisconnect);
+      int networkIdToRemove = ssidToNetworkId(ssidToDisconnect, "");
 
       if (networkIdToRemove > -1) {
 
@@ -690,7 +690,7 @@ public class WifiWizard2 extends CordovaPlugin {
       return;
     }
 
-    int networkIdToConnect = ssidToNetworkId(ssidToConnect);
+    int networkIdToConnect = ssidToNetworkId(ssidToConnect, "");
 
     if (networkIdToConnect > -1) {
       // We disable the network before connecting, because if this was the last connection before
@@ -813,7 +813,7 @@ public class WifiWizard2 extends CordovaPlugin {
       return false;
     }
 
-    int networkIdToDisconnect = ssidToNetworkId(ssidToDisconnect);
+    int networkIdToDisconnect = ssidToNetworkId(ssidToDisconnect, "");
 
     if (networkIdToDisconnect > 0) {
 
@@ -1089,7 +1089,7 @@ public class WifiWizard2 extends CordovaPlugin {
       return false;
     }
 
-    int networkIdToConnect = ssidToNetworkId(ssidToGetNetworkID);
+    int networkIdToConnect = ssidToNetworkId(ssidToGetNetworkID, "");
     callbackContext.success(networkIdToConnect);
 
     return true;
@@ -1198,7 +1198,7 @@ public class WifiWizard2 extends CordovaPlugin {
    * This method takes a given String, searches the current list of configured WiFi networks, and
    * returns the networkId for the network if the SSID matches. If not, it returns -1.
    */
-  private int ssidToNetworkId(String ssid) {
+  private int ssidToNetworkId(String ssid, String security) {
 
     try {
 
@@ -1213,8 +1213,10 @@ public class WifiWizard2 extends CordovaPlugin {
 
       // For each network in the list, compare the SSID with the given one
       for (WifiConfiguration test : currentNetworks) {
-        if (test.SSID != null && test.SSID.equals(ssid)) {
-          // networkId = test.networkId;
+        String testSecurity = this.getSecurity(test);
+        if (test.SSID != null && test.SSID.equals(ssid) && (testSecurity.equals(security) || security.length() == 0)) {
+           networkId = test.networkId;
+           
         }
       }
 
@@ -1222,7 +1224,7 @@ public class WifiWizard2 extends CordovaPlugin {
 
     }
   }
-
+ 
   /**
    * This method enables or disables the wifi
    */
@@ -1348,7 +1350,20 @@ public class WifiWizard2 extends CordovaPlugin {
         (ip >> 24 & 0xff)
     );
   }
-
+  private static String getSecurity(final WifiConfiguration network) {
+    if(network.allowedGroupCiphers.get(GroupCipher.CCMP)) {
+        return "WPA2";
+    }
+    else if(network.allowedGroupCiphers.get(GroupCipher.TKIP)) {
+        return "WPA";
+    }
+    else if(network.allowedGroupCiphers.get(GroupCipher.WEP40)
+            || network.allowedGroupCiphers.get(GroupCipher.WEP104)) {
+        return "WEP";
+    }
+    else return "NONE";
+  }
+  
   /**
    * Get IPv4 Subnet
    * @param inetAddress
