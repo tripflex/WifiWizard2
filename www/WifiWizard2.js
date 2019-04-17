@@ -123,11 +123,12 @@ var WifiWizard2 = {
     /**
      * Remove wifi network configuration
      * @param {string|int} [SSID]
+     * @param {string} [algorithm]
      * @returns {Promise<any>}
      */
-    remove: function (SSID) {
+    remove: function (SSID, algorithm) {
         return new Promise(function (resolve, reject) {
-            cordova.exec(resolve, reject, "WifiWizard2", "remove", [WifiWizard2.formatWifiString(SSID)]);
+            cordova.exec(resolve, reject, "WifiWizard2", "remove", [WifiWizard2.formatWifiString(SSID), algorithm || ""]);
         });
     },
 
@@ -161,7 +162,7 @@ var WifiWizard2 = {
             WifiWizard2.add(wifiConfig).then(function (newNetID) {
 
                 // Successfully updated or added wifiConfig
-                cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID), bindAll]);
+                cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID), bindAll, algorithm || ""]);
 
                 // Catch error adding/updating network
             }).catch(function (error) {
@@ -172,7 +173,7 @@ var WifiWizard2 = {
 
                     // This error above should only be returned when the add method was able to pull a network ID (as it tries to update instead of adding)
                     // Lets go ahead and attempt to connect to that SSID (using the existing wifi configuration)
-                    cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID), bindAll]);
+                    cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID), bindAll, algorithm]);
 
                 } else {
 
@@ -192,13 +193,14 @@ var WifiWizard2 = {
      * call WifiWizard2.disable() instead of disconnect.
      *
      * @param {string|int} [SSID=all]
+     * @param {string} [algorithm]
      * @returns {Promise<any>}
      */
-    disconnect: function (SSID) {
+    disconnect: function (SSID, algorithm) {
         return new Promise(function (resolve, reject) {
 
             if (SSID) {
-                cordova.exec(resolve, reject, "WifiWizard2", "disconnectNetwork", [WifiWizard2.formatWifiString(SSID)]);
+                cordova.exec(resolve, reject, "WifiWizard2", "disconnectNetwork", [WifiWizard2.formatWifiString(SSID), algorithm || ""]);
             } else {
                 cordova.exec(resolve, reject, "WifiWizard2", "disconnect", []);
             }
@@ -211,24 +213,26 @@ var WifiWizard2 = {
      * @param {string|int} [SSID]
      * @param {boolean} [bindAll=false]                            Whether or not to bind all network requests to this wifi network
      * @param {boolean} [waitForConnection=false]        Whether or not to wait before resolving promise until connection to wifi is verified
+     * @param {string} [algorithm]
      * @returns {Promise<any>}
      */
     enable: function (SSID, bindAll, waitForConnection) {
         return new Promise(function (resolve, reject) {
             bindAll = bindAll ? true : false;
             waitForConnection = waitForConnection ? true : false;
-            cordova.exec(resolve, reject, "WifiWizard2", "enable", [WifiWizard2.formatWifiString(SSID), bindAll, waitForConnection]);
+            cordova.exec(resolve, reject, "WifiWizard2", "enable", [WifiWizard2.formatWifiString(SSID), bindAll, waitForConnection, algorithm || ""]);
         });
     },
 
     /**
      * Disable Network
      * @param {string|int} [SSID]
+     * @param {string} [algorithm]
      * @returns {Promise<any>}
      */
     disable: function (SSID) {
         return new Promise(function (resolve, reject) {
-            cordova.exec(resolve, reject, "WifiWizard2", "disable", [WifiWizard2.formatWifiString(SSID)]);
+            cordova.exec(resolve, reject, "WifiWizard2", "disable", [WifiWizard2.formatWifiString(SSID), algorithm || ""]);
         });
     },
 
@@ -395,11 +399,12 @@ var WifiWizard2 = {
     /**
      * Get Network ID from SSID
      * @param {string|int} [SSID]
+     * @param {string} [algorithm]
      * @returns {Promise<any>}
      */
     getSSIDNetworkID: function (SSID) {
         return new Promise(function (resolve, reject) {
-            cordova.exec(resolve, reject, "WifiWizard2", "getSSIDNetworkID", [WifiWizard2.formatWifiString(SSID)]);
+            cordova.exec(resolve, reject, "WifiWizard2", "getSSIDNetworkID", [WifiWizard2.formatWifiString(SSID), algorithm || ""]);
         });
     },
 
