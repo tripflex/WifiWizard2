@@ -216,7 +216,7 @@ var WifiWizard2 = {
      * @param {string} [algorithm]
      * @returns {Promise<any>}
      */
-    enable: function (SSID, bindAll, waitForConnection) {
+    enable: function (SSID, bindAll, waitForConnection, algorithm) {
         return new Promise(function (resolve, reject) {
             bindAll = bindAll ? true : false;
             waitForConnection = waitForConnection ? true : false;
@@ -230,7 +230,7 @@ var WifiWizard2 = {
      * @param {string} [algorithm]
      * @returns {Promise<any>}
      */
-    disable: function (SSID) {
+    disable: function (SSID, algorithm) {
         return new Promise(function (resolve, reject) {
             cordova.exec(resolve, reject, "WifiWizard2", "disable", [WifiWizard2.formatWifiString(SSID), algorithm || ""]);
         });
@@ -402,7 +402,7 @@ var WifiWizard2 = {
      * @param {string} [algorithm]
      * @returns {Promise<any>}
      */
-    getSSIDNetworkID: function (SSID) {
+    getSSIDNetworkID: function (SSID, algorithm) {
         return new Promise(function (resolve, reject) {
             cordova.exec(resolve, reject, "WifiWizard2", "getSSIDNetworkID", [WifiWizard2.formatWifiString(SSID), algorithm || ""]);
         });
