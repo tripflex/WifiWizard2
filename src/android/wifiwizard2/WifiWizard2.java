@@ -579,16 +579,18 @@ public class WifiWizard2 extends CordovaPlugin {
     }
 
     String ssidToDisable = "";
+    String authType = "";
 
     try {
       ssidToDisable = data.getString(0);
+      authType = data.getString(1);
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
       Log.d(TAG, e.getMessage());
       return false;
     }
 
-    int networkIdToDisconnect = ssidToNetworkId(ssidToDisable);
+    int networkIdToDisconnect = ssidToNetworkId(ssidToDisable, authType);
 
     try {
 
