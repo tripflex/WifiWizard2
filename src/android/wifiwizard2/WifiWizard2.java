@@ -111,9 +111,6 @@ public class WifiWizard2 extends CordovaPlugin {
   // Store AP, previous, and desired wifi info
   private AP previous, desired;
 
-  private int networkId = -1;
-  private String ssid;
-
   private final BroadcastReceiver networkChangedReceiver = new NetworkChangedReceiver();
   private static final IntentFilter NETWORK_STATE_CHANGED_FILTER = new IntentFilter();
 
@@ -374,6 +371,8 @@ public class WifiWizard2 extends CordovaPlugin {
       String newPass = data.getString(2);
       boolean isHiddenSSID = data.getBoolean(3);
 
+      Log.d(TAG, "SET SSID: " + newSSID);
+
       wifi.hiddenSSID = isHiddenSSID;
 
       if (authType.equals("WPA") || authType.equals("WPA2")) {
@@ -396,7 +395,7 @@ public class WifiWizard2 extends CordovaPlugin {
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
 
-        wifi.networkId = -1;
+        wifi.networkId = ssidToNetworkId(newSSID, authType);
 
       } else if (authType.equals("WEP")) {
        /**
@@ -428,7 +427,7 @@ public class WifiWizard2 extends CordovaPlugin {
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
 
-        wifi.networkId = -1;
+        wifi.networkId = ssidToNetworkId(newSSID, authType);
 
       } else if (authType.equals("NONE")) {
        /**
@@ -440,7 +439,7 @@ public class WifiWizard2 extends CordovaPlugin {
         */
         wifi.SSID = newSSID;
         wifi.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
-        wifi.networkId = -1;
+        wifi.networkId = ssidToNetworkId(newSSID, authType);
 
       } else {
 
@@ -453,25 +452,15 @@ public class WifiWizard2 extends CordovaPlugin {
       if( API_VERSION < 26 ){
         wifi.priority = getMaxWifiPriority(wifiManager) + 1;
       }
-      int networkId = ssidToNetworkId(newSSID);
 
       // After processing authentication types, add or update network
       if (wifi.networkId == -1) { // -1 means SSID configuration does not exist yet
-        Log.d(TAG, "Add Network" + newSSID);
+
         int newNetId = wifiManager.addNetwork(wifi);
         if( newNetId > -1 ){
-          this.networkId = newNetId;
           callbackContext.success( newNetId );
         } else {
-          Log.d(TAG, "Add Network Error" + newSSID);
           callbackContext.error( "ERROR_ADDING_NETWORK" );
-          wifi.networkId = networkId;
-          int updatedNetID = wifiManager.updateNetwork(wifi);
-          if( updatedNetID > -1 ){
-            callbackContext.success( updatedNetID );
-          } else {
-            callbackContext.error( "ERROR_UPDATING_NETWORK" );
-          }
         }
 
       } else {
@@ -519,22 +508,21 @@ public class WifiWizard2 extends CordovaPlugin {
     String ssidToEnable = "";
     String bindAll = "false";
     String waitForConnection = "false";
+    String authType = "";
 
     try {
       ssidToEnable = data.getString(0);
       bindAll = data.getString(1);
       waitForConnection = data.getString(2);
+      authType = data.getString(3);
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
       Log.d(TAG, e.getMessage());
       return;
     }
-    
-    int networkIdToEnable = ssidToNetworkId(ssidToEnable);
-    if (this.networkId > -1 && ssidToEnable.equals(this.ssid)) {
-      networkIdToEnable = this.networkId;
-      callbackContext.success("NETWORKID FOUND");
-    }
+
+    int networkIdToEnable = ssidToNetworkId(ssidToEnable, authType);
+
     try {
 
       if (networkIdToEnable > -1) {
@@ -646,8 +634,9 @@ public class WifiWizard2 extends CordovaPlugin {
     // TODO: Verify the type of data!
     try {
       String ssidToDisconnect = data.getString(0);
+      String authType = data.getString(1);
 
-      int networkIdToRemove = ssidToNetworkId(ssidToDisconnect);
+      int networkIdToRemove = ssidToNetworkId(ssidToDisconnect, authType);
 
       if (networkIdToRemove > -1) {
 
@@ -695,17 +684,19 @@ public class WifiWizard2 extends CordovaPlugin {
 
     String ssidToConnect = "";
     String bindAll = "false";
-
+    String authType = "";
     try {
       ssidToConnect = data.getString(0);
       bindAll = data.getString(1);
+      authType = data.getString(2);
+
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
       Log.d(TAG, e.getMessage());
       return;
     }
 
-    int networkIdToConnect = ssidToNetworkId(ssidToConnect);
+    int networkIdToConnect = ssidToNetworkId(ssidToConnect, authType);
 
     if (networkIdToConnect > -1) {
       // We disable the network before connecting, because if this was the last connection before
@@ -818,17 +809,19 @@ public class WifiWizard2 extends CordovaPlugin {
     }
 
     String ssidToDisconnect = "";
+    String authType = "";
 
     // TODO: Verify type of data here!
     try {
       ssidToDisconnect = data.getString(0);
+      authType = data.getString(1);
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
       Log.d(TAG, e.getMessage());
       return false;
     }
 
-    int networkIdToDisconnect = ssidToNetworkId(ssidToDisconnect);
+    int networkIdToDisconnect = ssidToNetworkId(ssidToDisconnect, authType);
 
     if (networkIdToDisconnect > 0) {
 
@@ -1095,16 +1088,18 @@ public class WifiWizard2 extends CordovaPlugin {
     }
 
     String ssidToGetNetworkID = "";
+    String authType = "";
 
     try {
       ssidToGetNetworkID = data.getString(0);
+      authType = data.getString(1);
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
       Log.d(TAG, e.getMessage());
       return false;
     }
 
-    int networkIdToConnect = ssidToNetworkId(ssidToGetNetworkID);
+    int networkIdToConnect = ssidToNetworkId(ssidToGetNetworkID, authType);
     callbackContext.success(networkIdToConnect);
 
     return true;
@@ -1213,8 +1208,7 @@ public class WifiWizard2 extends CordovaPlugin {
    * This method takes a given String, searches the current list of configured WiFi networks, and
    * returns the networkId for the network if the SSID matches. If not, it returns -1.
    */
-  private int ssidToNetworkId(String ssid) {
-
+  private int ssidToNetworkId(String ssid, String authType) {
     try {
 
       int maybeNetId = Integer.parseInt(ssid);
@@ -1222,22 +1216,55 @@ public class WifiWizard2 extends CordovaPlugin {
       return maybeNetId;
 
     } catch (NumberFormatException e) {
-
       List<WifiConfiguration> currentNetworks = wifiManager.getConfiguredNetworks();
       int networkId = -1;
-
       // For each network in the list, compare the SSID with the given one
       for (WifiConfiguration test : currentNetworks) {
-        if (test.SSID != null && test.SSID.equals(ssid)) {
-          networkId = test.networkId;
+        if (test.SSID != null) {
+            if (authType.length() == 0) {
+              if(test.SSID.equals(ssid)) {
+                networkId = test.networkId;
+              }
+            } else {
+              String testSSID = test.SSID + this.getSecurityType(test);
+              if(testSSID.equals(ssid + authType)) {
+                networkId = test.networkId;
+              }
+            }
         }
       }
-
       return networkId;
-
     }
   }
 
+
+  public static final int SECURITY_NONE = 0;
+  public static final int SECURITY_WEP = 1;
+  public static final int SECURITY_PSK = 2;
+  public static final int SECURITY_EAP = 3;
+
+  public static String getSecurityType(WifiConfiguration config) {
+      switch (getSecurity(config)) {
+          case SECURITY_WEP:
+              return "WEP";
+          case SECURITY_PSK:
+              if (config.allowedProtocols.get(WifiConfiguration.Protocol.RSN))
+                  return "WPA2";
+              else
+                  return "WPA";
+          default:
+              return "NONE";
+      }
+  }
+  public static int getSecurity(WifiConfiguration config) {
+      if (config.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.WPA_PSK)) 
+          return SECURITY_PSK;
+
+      if (config.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.WPA_EAP) || config.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.IEEE8021X)) 
+          return SECURITY_EAP;
+
+      return (config.wepKeys[0] != null) ? SECURITY_WEP : SECURITY_NONE;
+  }
   /**
    * This method enables or disables the wifi
    */
