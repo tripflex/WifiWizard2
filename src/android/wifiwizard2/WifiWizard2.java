@@ -457,12 +457,13 @@ public class WifiWizard2 extends CordovaPlugin {
 
       // After processing authentication types, add or update network
       if (wifi.networkId == -1) { // -1 means SSID configuration does not exist yet
-
+        Log.d(TAG, "Add Network" + newSSID);
         int newNetId = wifiManager.addNetwork(wifi);
         if( newNetId > -1 ){
           this.networkId = newNetId;
           callbackContext.success( newNetId );
         } else {
+          Log.d(TAG, "Add Network Error" + newSSID);
           callbackContext.error( "ERROR_ADDING_NETWORK" );
           wifi.networkId = networkId;
           int updatedNetID = wifiManager.updateNetwork(wifi);
