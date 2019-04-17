@@ -111,6 +111,9 @@ public class WifiWizard2 extends CordovaPlugin {
   // Store AP, previous, and desired wifi info
   private AP previous, desired;
 
+  private int networkId = -1;
+  private String ssid;
+
   private final BroadcastReceiver networkChangedReceiver = new NetworkChangedReceiver();
   private static final IntentFilter NETWORK_STATE_CHANGED_FILTER = new IntentFilter();
 
@@ -393,7 +396,7 @@ public class WifiWizard2 extends CordovaPlugin {
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
 
-        wifi.networkId = ssidToNetworkId(newSSID, authType);
+        wifi.networkId = -1;
 
       } else if (authType.equals("WEP")) {
        /**
@@ -425,7 +428,7 @@ public class WifiWizard2 extends CordovaPlugin {
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
 
-        wifi.networkId = ssidToNetworkId(newSSID, authType);
+        wifi.networkId = -1;
 
       } else if (authType.equals("NONE")) {
        /**
@@ -437,7 +440,7 @@ public class WifiWizard2 extends CordovaPlugin {
         */
         wifi.SSID = newSSID;
         wifi.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
-        wifi.networkId = ssidToNetworkId(newSSID, authType);
+        wifi.networkId = -1;
 
       } else {
 
@@ -446,20 +449,28 @@ public class WifiWizard2 extends CordovaPlugin {
         return false;
 
       }
-
       // Set network to highest priority (deprecated in API >= 26)
       if( API_VERSION < 26 ){
         wifi.priority = getMaxWifiPriority(wifiManager) + 1;
       }
+      int networkId = ssidToNetworkId(newSSID);
 
       // After processing authentication types, add or update network
       if (wifi.networkId == -1) { // -1 means SSID configuration does not exist yet
 
         int newNetId = wifiManager.addNetwork(wifi);
         if( newNetId > -1 ){
+          this.networkId = newNetId;
           callbackContext.success( newNetId );
         } else {
           callbackContext.error( "ERROR_ADDING_NETWORK" );
+          wifi.networkId = networkId;
+          int updatedNetID = wifiManager.updateNetwork(wifi);
+          if( updatedNetID > -1 ){
+            callbackContext.success( updatedNetID );
+          } else {
+            callbackContext.error( "ERROR_UPDATING_NETWORK" );
+          }
         }
 
       } else {
@@ -517,9 +528,12 @@ public class WifiWizard2 extends CordovaPlugin {
       Log.d(TAG, e.getMessage());
       return;
     }
-
-    int networkIdToEnable = ssidToNetworkId(ssidToEnable, "");
-
+    
+    int networkIdToEnable = ssidToNetworkId(ssidToEnable);
+    if (this.networkId > -1 && ssidToEnable.equals(this.ssid)) {
+      networkIdToEnable = this.networkId;
+      callbackContext.success("NETWORKID FOUND");
+    }
     try {
 
       if (networkIdToEnable > -1) {
@@ -585,7 +599,7 @@ public class WifiWizard2 extends CordovaPlugin {
       return false;
     }
 
-    int networkIdToDisconnect = ssidToNetworkId(ssidToDisable, "");
+    int networkIdToDisconnect = ssidToNetworkId(ssidToDisable);
 
     try {
 
@@ -632,7 +646,7 @@ public class WifiWizard2 extends CordovaPlugin {
     try {
       String ssidToDisconnect = data.getString(0);
 
-      int networkIdToRemove = ssidToNetworkId(ssidToDisconnect, "");
+      int networkIdToRemove = ssidToNetworkId(ssidToDisconnect);
 
       if (networkIdToRemove > -1) {
 
@@ -690,7 +704,7 @@ public class WifiWizard2 extends CordovaPlugin {
       return;
     }
 
-    int networkIdToConnect = ssidToNetworkId(ssidToConnect, "");
+    int networkIdToConnect = ssidToNetworkId(ssidToConnect);
 
     if (networkIdToConnect > -1) {
       // We disable the network before connecting, because if this was the last connection before
@@ -813,7 +827,7 @@ public class WifiWizard2 extends CordovaPlugin {
       return false;
     }
 
-    int networkIdToDisconnect = ssidToNetworkId(ssidToDisconnect, "");
+    int networkIdToDisconnect = ssidToNetworkId(ssidToDisconnect);
 
     if (networkIdToDisconnect > 0) {
 
@@ -1089,7 +1103,7 @@ public class WifiWizard2 extends CordovaPlugin {
       return false;
     }
 
-    int networkIdToConnect = ssidToNetworkId(ssidToGetNetworkID, "");
+    int networkIdToConnect = ssidToNetworkId(ssidToGetNetworkID);
     callbackContext.success(networkIdToConnect);
 
     return true;
@@ -1198,7 +1212,7 @@ public class WifiWizard2 extends CordovaPlugin {
    * This method takes a given String, searches the current list of configured WiFi networks, and
    * returns the networkId for the network if the SSID matches. If not, it returns -1.
    */
-  private int ssidToNetworkId(String ssid, String security) {
+  private int ssidToNetworkId(String ssid) {
 
     try {
 
@@ -1213,10 +1227,8 @@ public class WifiWizard2 extends CordovaPlugin {
 
       // For each network in the list, compare the SSID with the given one
       for (WifiConfiguration test : currentNetworks) {
-        String testSecurity = this.getSecurity(test);
-        if (test.SSID != null && test.SSID.equals(ssid) && (testSecurity.equals(security) || security.length() == 0)) {
-           networkId = test.networkId;
-           
+        if (test.SSID != null && test.SSID.equals(ssid)) {
+          networkId = test.networkId;
         }
       }
 
@@ -1224,7 +1236,7 @@ public class WifiWizard2 extends CordovaPlugin {
 
     }
   }
- 
+
   /**
    * This method enables or disables the wifi
    */
@@ -1350,20 +1362,7 @@ public class WifiWizard2 extends CordovaPlugin {
         (ip >> 24 & 0xff)
     );
   }
-  private static String getSecurity(final WifiConfiguration network) {
-    if(network.allowedGroupCiphers.get(GroupCipher.CCMP)) {
-        return "WPA2";
-    }
-    else if(network.allowedGroupCiphers.get(GroupCipher.TKIP)) {
-        return "WPA";
-    }
-    else if(network.allowedGroupCiphers.get(GroupCipher.WEP40)
-            || network.allowedGroupCiphers.get(GroupCipher.WEP104)) {
-        return "WEP";
-    }
-    else return "NONE";
-  }
-  
+
   /**
    * Get IPv4 Subnet
    * @param inetAddress
