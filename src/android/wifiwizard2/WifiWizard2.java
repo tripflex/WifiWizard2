@@ -1240,32 +1240,32 @@ public class WifiWizard2 extends CordovaPlugin {
   }
 
 
-  public static final int SECURITY_NONE = 0;
-  public static final int SECURITY_WEP = 1;
-  public static final int SECURITY_PSK = 2;
-  public static final int SECURITY_EAP = 3;
+  static public String getSecurityType(WifiConfiguration wifiConfig) {
 
-  public static String getSecurityType(WifiConfiguration config) {
-      switch (getSecurity(config)) {
-          case SECURITY_WEP:
-              return "WEP";
-          case SECURITY_PSK:
-              if (config.allowedProtocols.get(WifiConfiguration.Protocol.RSN))
-                  return "WPA"; //Normally WPA2 but since we map everything to WPA it will be WPA
-              else
-                  return "WPA";
-          default:
-              return "NONE";
-      }
-  }
-  public static int getSecurity(WifiConfiguration config) {
-      if (config.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.WPA_PSK)) 
-          return SECURITY_PSK;
-
-      if (config.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.WPA_EAP) || config.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.IEEE8021X)) 
-          return SECURITY_EAP;
-
-      return (config.wepKeys[0] != null) ? SECURITY_WEP : SECURITY_NONE;
+    if (wifiConfig.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.NONE)) {
+        // If we never set group ciphers, wpa_supplicant puts all of them.
+        // For open, we don't set group ciphers.
+        // For WEP, we specifically only set WEP40 and WEP104, so CCMP
+        // and TKIP should not be there.
+        if (!wifiConfig.allowedGroupCiphers.get(WifiConfiguration.GroupCipher.CCMP)
+                && (wifiConfig.allowedGroupCiphers.get(WifiConfiguration.GroupCipher.WEP40)
+                        || wifiConfig.allowedGroupCiphers.get(WifiConfiguration.GroupCipher.WEP104))) {
+            return "WEP";
+        } else {
+            return "NONE";
+        }
+    } else if (wifiConfig.allowedProtocols.get(WifiConfiguration.Protocol.RSN)) {
+        return "WPA";//"WPA2";
+    } else if (wifiConfig.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.WPA_EAP)) {
+        return "WPA";//"WPA_EAP";
+    } else if (wifiConfig.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.IEEE8021X)) {
+        return "WPA";//"IEEE8021X";
+    } else if (wifiConfig.allowedProtocols.get(WifiConfiguration.Protocol.WPA)) {
+        return "WPA";
+    } else {
+        Log.w(TAG, "Unknown security type from WifiConfiguration, falling back on open.");
+        return "NONE";
+    }
   }
   /**
    * This method enables or disables the wifi
