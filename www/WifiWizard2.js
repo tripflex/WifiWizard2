@@ -8,7 +8,7 @@
  *      http://www.apache.org/licenses/LICENSE-2.0
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express oWPA2r implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
@@ -86,10 +86,6 @@ var WifiWizard2 = {
                 if (typeof wifi.auth == "object") {
 
                     switch (wifi.auth.algorithm) {
-		        case "WPA2":
-                            networkInformation.push("WPA2");
-                            networkInformation.push(wifi.auth.password);
-                            break;
                         case "WPA":
                             networkInformation.push("WPA");
                             networkInformation.push(wifi.auth.password);
@@ -570,12 +566,6 @@ var WifiWizard2 = {
             // open network
             wifiConfig.auth = {
                 algorithm: "NONE"
-            };
-        } else if (algorithm === "WPA2") {
-            wifiConfig.auth = {
-                algorithm: algorithm,
-                password: WifiWizard2.formatWifiString(password)
-                // Other parameters can be added depending on algorithm.
             };
         } else if (algorithm === "WPA") {
             wifiConfig.auth = {
