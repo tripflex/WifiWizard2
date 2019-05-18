@@ -1256,7 +1256,7 @@ public class WifiWizard2 extends CordovaPlugin {
             }
         }
       }
-      if (networkId == -1 && authType.substring(0,3).equals('WPA')) {
+      if (networkId == -1 && authType.substring(0,3).equals("WPA")) {
         for (WifiConfiguration test : currentNetworks) {
           if (test.SSID != null) {
               if (authType.length() == 0) {
