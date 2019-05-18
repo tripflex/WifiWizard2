@@ -375,7 +375,7 @@ public class WifiWizard2 extends CordovaPlugin {
 
       wifi.hiddenSSID = isHiddenSSID;
 
-      if (authType.equals("WPA")) {
+      if (authType.equals("WPA2")) {
        /**
         * WPA Data format:
         * 0: ssid
@@ -393,6 +393,27 @@ public class WifiWizard2 extends CordovaPlugin {
         wifi.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP);
         wifi.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP);
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
+        wifi.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
+
+        wifi.networkId = ssidToNetworkId(newSSID, authType);
+
+      } else if (authType.equals("WPA")) {
+       /**
+        * WPA Data format:
+        * 0: ssid
+        * 1: auth
+        * 2: password
+        * 3: isHiddenSSID
+        */
+        wifi.SSID = newSSID;
+        wifi.preSharedKey = newPass;
+
+        wifi.status = WifiConfiguration.Status.ENABLED;
+        wifi.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP);
+        wifi.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP);
+        wifi.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK);
+        wifi.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP);
+        wifi.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP);
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
 
         wifi.networkId = ssidToNetworkId(newSSID, authType);
@@ -1233,6 +1254,22 @@ public class WifiWizard2 extends CordovaPlugin {
                 networkId = test.networkId;
               }
             }
+        }
+      }
+      if (networkId == -1 && authType.substring(0,3).equals('WPA')) {
+        for (WifiConfiguration test : currentNetworks) {
+          if (test.SSID != null) {
+              if (authType.length() == 0) {
+                if(test.SSID.equals(ssid)) {
+                  networkId = test.networkId;
+                }
+              } else {
+                String testSSID = test.SSID + this.getSecurityType(test).substring(0,3);
+                if(testSSID.equals(ssid + authType)) {
+                  networkId = test.networkId;
+                }
+              }
+          }
         }
       }
       return networkId;
