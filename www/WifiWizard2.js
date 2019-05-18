@@ -86,6 +86,10 @@ var WifiWizard2 = {
                 if (typeof wifi.auth == "object") {
 
                     switch (wifi.auth.algorithm) {
+		    	case "WPA2":
+                            networkInformation.push("WPA2");
+                            networkInformation.push(wifi.auth.password);
+                            break;
                         case "WPA":
                             networkInformation.push("WPA");
                             networkInformation.push(wifi.auth.password);
@@ -566,6 +570,12 @@ var WifiWizard2 = {
             // open network
             wifiConfig.auth = {
                 algorithm: "NONE"
+            };
+        } else if (algorithm === "WPA2") {
+            wifiConfig.auth = {
+                algorithm: algorithm,
+                password: WifiWizard2.formatWifiString(password)
+                // Other parameters can be added depending on algorithm.
             };
         } else if (algorithm === "WPA") {
             wifiConfig.auth = {
