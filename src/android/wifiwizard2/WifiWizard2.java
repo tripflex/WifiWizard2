@@ -1292,7 +1292,7 @@ public class WifiWizard2 extends CordovaPlugin {
             return "NONE";
         }
     } else if (wifiConfig.allowedProtocols.get(WifiConfiguration.Protocol.RSN)) {
-        return "WPA";//"WPA2";
+        return "WPA2";
     } else if (wifiConfig.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.WPA_EAP)) {
         return "WPA";//"WPA_EAP";
     } else if (wifiConfig.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.IEEE8021X)) {
