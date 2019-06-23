@@ -88,8 +88,12 @@ public class WifiWizard2 extends CordovaPlugin {
   private static final String CAN_CONNECT_TO_ROUTER = "canConnectToRouter";
   private static final String CAN_CONNECT_TO_INTERNET = "canConnectToInternet";
   private static final String IS_CONNECTED_TO_INTERNET = "isConnectedToInternet";
+  private static final String RESET_BIND_ALL = "resetBindAll";
+  private static final String SET_BIND_ALL = "setBindAll";
   private static final String GET_WIFI_IP_INFO = "getWifiIPInfo";
 
+
+  
   private static final int SCAN_RESULTS_CODE = 0; // Permissions request code for getScanResults()
   private static final int SCAN_CODE = 1; // Permissions request code for scan()
   private static final int LOCATION_REQUEST_CODE = 2; // Permissions request code
@@ -252,6 +256,10 @@ public class WifiWizard2 extends CordovaPlugin {
       this.getConnectedBSSID(callbackContext);
     } else if (action.equals(GET_CONNECTED_NETWORKID)) {
       this.getConnectedNetworkID(callbackContext);
+    } else if (action.equals(RESET_BIND_ALL)) {
+      this.resetBindAll(callbackContext);
+    } else if (action.equals(SET_BIND_ALL)) {
+      this.setBindAll(callbackContext);
     } else {
       callbackContext.error("Incorrect action parameter: " + action);
       // The ONLY time to return FALSE is when action does not exist that was called
