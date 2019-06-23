@@ -257,32 +257,34 @@ public class WifiWizard2 extends CordovaPlugin {
       this.disconnect(callbackContext);
     } else if (action.equals(GET_CONNECTED_NETWORKID)) {
       this.getConnectedNetworkID(callbackContext);
-    }
-
-    // Check if location is globally enabled (and API 32 or newer)
-    if ( !locationIsEnabled() && API_VERSION >= 23 ) {
-      callbackContext.error("LOCATION_NOT_ENABLED");
-      return true; // We still return true and handle error in JS
-    }
-
-    // Actions that require LOCATION to be enabled
-    if (action.equals(SCAN)) {
-      this.scan(callbackContext, data);
-    } else if (action.equals(START_SCAN)) {
-      this.startScan(callbackContext);
-    } else if (action.equals(GET_SCAN_RESULTS)) {
-      this.getScanResults(callbackContext, data);
-    } else if (action.equals(GET_CONNECTED_SSID)) {
-      this.getConnectedSSID(callbackContext);
-    } else if (action.equals(GET_CONNECTED_BSSID)) {
-      this.getConnectedBSSID(callbackContext);
     } else {
-      callbackContext.error("Incorrect action parameter: " + action);
-      // The ONLY time to return FALSE is when action does not exist that was called
-      // Returning false results in an INVALID_ACTION error, which translates to an error callback invoked on the JavaScript side
-      // All other errors should be handled with the fail callback (callbackContext.error)
-      // @see https://cordova.apache.org/docs/en/latest/guide/platforms/android/plugin.html
-      return false;
+     
+      // Check if location is globally enabled (and API 32 or newer)
+      if ( !locationIsEnabled() && API_VERSION >= 23 ) {
+        callbackContext.error("LOCATION_NOT_ENABLED");
+        return true; // We still return true and handle error in JS
+      }
+
+      // Actions that require LOCATION to be enabled
+      if (action.equals(SCAN)) {
+        this.scan(callbackContext, data);
+      } else if (action.equals(START_SCAN)) {
+        this.startScan(callbackContext);
+      } else if (action.equals(GET_SCAN_RESULTS)) {
+        this.getScanResults(callbackContext, data);
+      } else if (action.equals(GET_CONNECTED_SSID)) {
+        this.getConnectedSSID(callbackContext);
+      } else if (action.equals(GET_CONNECTED_BSSID)) {
+        this.getConnectedBSSID(callbackContext);
+      } else {
+        callbackContext.error("Incorrect action parameter: " + action);
+        // The ONLY time to return FALSE is when action does not exist that was called
+        // Returning false results in an INVALID_ACTION error, which translates to an error callback invoked on the JavaScript side
+        // All other errors should be handled with the fail callback (callbackContext.error)
+        // @see https://cordova.apache.org/docs/en/latest/guide/platforms/android/plugin.html
+        return false;
+      }
+      
     }
 
     return true;
