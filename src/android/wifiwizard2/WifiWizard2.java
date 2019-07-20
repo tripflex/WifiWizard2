@@ -377,7 +377,7 @@ public class WifiWizard2 extends CordovaPlugin {
 
       if (authType.equals("WPA2")) {
        /**
-        * WPA Data format:
+        * WPA2 Data format:
         * 0: ssid
         * 1: auth
         * 2: password
@@ -1241,7 +1241,7 @@ public class WifiWizard2 extends CordovaPlugin {
     } catch (NumberFormatException e) {
       List<WifiConfiguration> currentNetworks = wifiManager.getConfiguredNetworks();
       int networkId = -1;
-      // For each network in the list, compare the SSID with the given one
+      // For each network in the list, compare the SSID with the given one and check if authType matches
       for (WifiConfiguration test : currentNetworks) {
         if (test.SSID != null) {
             if (authType.length() == 0) {
@@ -1256,6 +1256,7 @@ public class WifiWizard2 extends CordovaPlugin {
             }
         }
       }
+      // Fallback to WPA if WPA2 is not found
       if (networkId == -1 && authType.substring(0,3).equals("WPA")) {
         for (WifiConfiguration test : currentNetworks) {
           if (test.SSID != null) {
@@ -1276,7 +1277,7 @@ public class WifiWizard2 extends CordovaPlugin {
     }
   }
 
-
+  // Get the different configured security types
   static public String getSecurityType(WifiConfiguration wifiConfig) {
 
     if (wifiConfig.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.NONE)) {
