@@ -6,6 +6,7 @@
 - (void)iOSConnectNetwork:(CDVInvokedUrlCommand *)command;
 - (void)iOSConnectOpenNetwork:(CDVInvokedUrlCommand *)command;
 - (void)iOSDisconnectNetwork:(CDVInvokedUrlCommand *)command;
+- (void)getWifiIP:(CDVInvokedUrlCommand *)command;
 - (void)getConnectedSSID:(CDVInvokedUrlCommand *)command;
 - (void)getConnectedBSSID:(CDVInvokedUrlCommand *)command;
 - (void)isWifiEnabled:(CDVInvokedUrlCommand *)command;
