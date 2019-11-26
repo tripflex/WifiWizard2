@@ -4,6 +4,7 @@
 #import <SystemConfiguration/CaptiveNetwork.h>
 #import <NetworkExtension/NetworkExtension.h> 
 
+@implementation WifiWizard2
 - (void)getWifiIP:(CDVInvokedUrlCommand*)command {
     CDVPluginResult *pluginResult = nil;
 	var address: String?
