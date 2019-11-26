@@ -2,9 +2,39 @@
 #include <ifaddrs.h>
 #import <net/if.h>
 #import <SystemConfiguration/CaptiveNetwork.h>
-#import <NetworkExtension/NetworkExtension.h>  
+#import <NetworkExtension/NetworkExtension.h> 
 
-@implementation WifiWizard2
+- (void)getWifiIP:(CDVInvokedUrlCommand*)command {
+    CDVPluginResult *pluginResult = nil;
+	var address: String?
+	var ifaddr: UnsafeMutablePointer<ifaddrs>? = nil
+	if getifaddrs(&ifaddr) == 0 {
+	    var ptr = ifaddr
+	    while ptr != nil {
+		defer { ptr = ptr?.pointee.ifa_next }
+
+		let interface = ptr?.pointee
+		let addrFamily = interface?.ifa_addr.pointee.sa_family
+		if addrFamily == UInt8(AF_INET) || addrFamily == UInt8(AF_INET6) {
+
+		    if let name: String = String(cString: (interface?.ifa_name)!), name == "en0" {
+			var hostname = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+			getnameinfo(interface?.ifa_addr, socklen_t((interface?.ifa_addr.pointee.sa_len)!), &hostname, socklen_t(hostname.count), nil, socklen_t(0), NI_NUMERICHOST)
+			address = String(cString: hostname)
+		    }
+		}
+	    }
+	    freeifaddrs(ifaddr)
+	}
+    if (address) {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:address];
+    } else {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Not available"];
+    }
+
+    [self.commandDelegate sendPluginResult:pluginResult
+                                callbackId:command.callbackId];
+}
 
 - (id)fetchSSIDInfo {
     // see http://stackoverflow.com/a/5198968/907720
