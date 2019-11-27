@@ -1,32 +1,40 @@
 #import "WifiWizard2.h"
 #include <ifaddrs.h>
+#include <arpa/inet.h>
 #import <net/if.h>
 #import <SystemConfiguration/CaptiveNetwork.h>
-#import <NetworkExtension/NetworkExtension.h> 
+#import <NetworkExtension/NetworkExtension.h>
 
 @implementation WifiWizard2
+
 - (void)getWifiIP:(CDVInvokedUrlCommand*)command {
     CDVPluginResult *pluginResult = nil;
-	var address: String?
-	var ifaddr: UnsafeMutablePointer<ifaddrs>? = nil
-	if getifaddrs(&ifaddr) == 0 {
-	    var ptr = ifaddr
-	    while ptr != nil {
-		defer { ptr = ptr?.pointee.ifa_next }
+	
+    NSString *address = @"error";
+    struct ifaddrs *interfaces = NULL;
+    struct ifaddrs *temp_addr = NULL;
+    int success = 0;
+    // retrieve the current interfaces - returns 0 on success
+    success = getifaddrs(&interfaces);
+    if (success == 0) {
+        // Loop through linked list of interfaces
+        temp_addr = interfaces;
+        while(temp_addr != NULL) {
+            if(temp_addr->ifa_addr->sa_family == AF_INET) {
+                // Check if interface is en0 which is the wifi connection on the iPhone
+                if([[NSString stringWithUTF8String:temp_addr->ifa_name] isEqualToString:@"en0"]) {
+                    // Get NSString from C String
+                    address = [NSString stringWithUTF8String:inet_ntoa(((struct sockaddr_in *)temp_addr->ifa_addr)->sin_addr)];
 
-		let interface = ptr?.pointee
-		let addrFamily = interface?.ifa_addr.pointee.sa_family
-		if addrFamily == UInt8(AF_INET) || addrFamily == UInt8(AF_INET6) {
+                }
 
-		    if let name: String = String(cString: (interface?.ifa_name)!), name == "en0" {
-			var hostname = [CChar](repeating: 0, count: Int(NI_MAXHOST))
-			getnameinfo(interface?.ifa_addr, socklen_t((interface?.ifa_addr.pointee.sa_len)!), &hostname, socklen_t(hostname.count), nil, socklen_t(0), NI_NUMERICHOST)
-			address = String(cString: hostname)
-		    }
-		}
-	    }
-	    freeifaddrs(ifaddr)
-	}
+            }
+
+            temp_addr = temp_addr->ifa_next;
+        }
+    }
+    // Free memory
+    freeifaddrs(interfaces);
     if (address) {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:address];
     } else {
