@@ -51,12 +51,21 @@
 
 	if (@available(iOS 11.0, *)) {
 	    if (ssidString && [ssidString length]) {
-			NEHotspotConfiguration *configuration = [[NEHotspotConfiguration
-				alloc] initWithSSID:ssidString 
-					passphrase:passwordString 
-						isWEP:(BOOL)false];
+		NEHotspotConfiguration *configuration = [[NEHotspotConfiguration
+						      alloc] initWithSSID:ssidString
+						     passphrase:passwordString
+						     isWEP:(BOOL)false];
 
-			configuration.joinOnce = false;
+
+		if (@available(iOS 13.0, *)) {
+		NEHotspotConfiguration *configuration = [[NEHotspotConfiguration
+							  alloc] initWithSSIDPrefix:ssidString
+							 passphrase:passwordString
+							 isWEP:(BOOL)false];
+		}
+
+
+		configuration.joinOnce = false;
             
             [[NEHotspotConfigurationManager sharedManager] applyConfiguration:configuration completionHandler:^(NSError * _Nullable error) {
                 
