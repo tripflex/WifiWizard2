@@ -4,6 +4,7 @@
 #import <net/if.h>
 #import <SystemConfiguration/CaptiveNetwork.h>
 #import <NetworkExtension/NetworkExtension.h>
+#import <CoreLocation/CoreLocation.h>
 
 @implementation WifiWizard2
 
@@ -200,9 +201,8 @@
 
 - (void)getConnectedSSID:(CDVInvokedUrlCommand*)command {
     CDVPluginResult *pluginResult = nil;
-    NSDictionary *r = [self fetchSSIDInfo];
 
-    NSString *ssid = [r objectForKey:(id)kCNNetworkInfoKeySSID]; //@"SSID"
+    NSString *ssid = [self getWifiSsid]; //@"SSID"
 
     if (ssid && [ssid length]) {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:ssid];
@@ -367,6 +367,42 @@
     [self.commandDelegate sendPluginResult:pluginResult
                                 callbackId:command.callbackId];
 }
+
+- (NSString*) getWifiSsid {
+    if (@available(iOS 13.0, *)) {
+        if ([CLLocationManager authorizationStatus] == kCLAuthorizationStatusDenied) {
+            NSLog(@"User has explicitly denied authorization for this application, or location services are disabled in Settings.");
+            //[[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
+            return nil;
+        }
+        CLLocationManager* cllocation = [[CLLocationManager alloc] init];
+        if(![CLLocationManager locationServicesEnabled] || [CLLocationManager authorizationStatus] == kCLAuthorizationStatusNotDetermined){
+            [cllocation requestWhenInUseAuthorization];
+            usleep(500);
+            return [self getWifiSsid];
+        }
+    }
+    NSString *wifiName = nil;
+    CFArrayRef wifiInterfaces = CNCopySupportedInterfaces();
+    if (!wifiInterfaces) {
+        return nil;
+    }
+    NSArray *interfaces = (__bridge NSArray *)wifiInterfaces;
+    for (NSString *interfaceName in interfaces) {
+        CFDictionaryRef dictRef = CNCopyCurrentNetworkInfo((__bridge CFStringRef)(interfaceName));
+        
+        if (dictRef) {
+            NSDictionary *networkInfo = (__bridge NSDictionary *)dictRef;
+            NSLog(@"network info -> %@", networkInfo);
+            wifiName = [networkInfo objectForKey:(__bridge NSString *)kCNNetworkInfoKeySSID];
+            CFRelease(dictRef);
+        }
+    }
+    
+    CFRelease(wifiInterfaces);
+    return wifiName;
+}
+
 
 
 @end
