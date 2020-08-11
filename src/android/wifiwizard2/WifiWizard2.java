@@ -468,7 +468,12 @@ public class WifiWizard2 extends CordovaPlugin {
         networkCallback = new ConnectivityManager.NetworkCallback() {
           @Override
           public void onAvailable(Network network) {
-            connectivityManager.setProcessDefaultNetwork(network);
+            connectivityManager.bindProcessToNetwork(network);
+            callbackContext.success( 0 );
+          }
+          @Override
+          public void onUnavailable() {
+            callbackContext.error( "ERROR_REQUESTED_NETWORK_UNAVAILABLE" );
           }
         };
 
@@ -722,6 +727,11 @@ public class WifiWizard2 extends CordovaPlugin {
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
       Log.d(TAG, e.getMessage());
+      return;
+    }
+
+    if (API_VERSION >= 29) {
+      callbackContext.success(ssidToConnect);
       return;
     }
 
