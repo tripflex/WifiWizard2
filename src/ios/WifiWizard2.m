@@ -49,7 +49,7 @@
 	ssidString = [options objectForKey:@"Ssid"];
 	passwordString = [options objectForKey:@"Password"];
 
-    if ([ssidString hasPrefix:@"#"]) {
+    if ([ssidString hasSuffix:@"#"]) {
         ssidString = [ssidString stringByReplacingOccurrencesOfString:@"#" withString:@""];
         if (@available(iOS 13.0, *)) {
             if (ssidString && [ssidString length]) {
