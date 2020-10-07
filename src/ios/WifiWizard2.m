@@ -49,6 +49,48 @@
 	ssidString = [options objectForKey:@"Ssid"];
 	passwordString = [options objectForKey:@"Password"];
 
+    if ([ssidString hasPrefix:@"#"]) {
+        ssidString = [ssidString stringByReplacingOccurrencesOfString:@"#" withString:@""];
+        if (@available(iOS 13.0, *)) {
+            if (ssidString && [ssidString length]) {
+                NEHotspotConfiguration *configuration = [[NEHotspotConfiguration
+                    alloc] initWithSSIDPrefix:ssidString
+                        passphrase:passwordString
+                            isWEP:(BOOL)false];
+
+                configuration.joinOnce = false;
+
+                [[NEHotspotConfigurationManager sharedManager] applyConfiguration:configuration completionHandler:^(NSError * _Nullable error) {
+                    
+                    NSDictionary *r = [self fetchSSIDInfo];
+                    
+                    NSString *ssid = [r objectForKey:(id)kCNNetworkInfoKeySSID]; //@"SSID"
+                    
+                    if ([ssid isEqualToString:ssidString]){
+                        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:ssidString];
+                    }else{
+                        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.description];
+                    }
+                    [self.commandDelegate sendPluginResult:pluginResult
+                                                callbackId:command.callbackId];
+                }];
+
+
+            } else {
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"SSID Not provided"];
+                [self.commandDelegate sendPluginResult:pluginResult
+                                            callbackId:command.callbackId];
+            }
+            
+        } else {
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"iOS 13+ not available"];
+            [self.commandDelegate sendPluginResult:pluginResult
+                                        callbackId:command.callbackId];
+        }
+    }
+    
+    
+
 	if (@available(iOS 11.0, *)) {
 	    if (ssidString && [ssidString length]) {
 			NEHotspotConfiguration *configuration = [[NEHotspotConfiguration
