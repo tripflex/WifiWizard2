@@ -83,11 +83,8 @@
             [self.commandDelegate sendPluginResult:pluginResult
                                         callbackId:command.callbackId];
         }
-    }
-    
-    
 
-	if (@available(iOS 11.0, *)) {
+    } else if (@available(iOS 11.0, *)) {
 	    if (ssidString && [ssidString length]) {
 			NEHotspotConfiguration *configuration = [[NEHotspotConfiguration
 				alloc] initWithSSID:ssidString 
