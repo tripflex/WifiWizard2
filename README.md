@@ -76,7 +76,7 @@ this plugin will automagically do this for you when you call `scan` or `startSca
 Newer versions of Android will **not** allow you to `remove`, update existing configuration, or `disable` networks that were not created by your application.  If you are having issues using this features, with your device connected to your computer, run `adb logcat` to view Android Logs for specific error.
 
 ## IOS Notes
-iOS 12 and later, enable the Access WiFi Information capability for your app in Xcode. When you enable this capability, Xcode automatically adds the Access WiFi Information entitlement to your entitlements file and App ID.
+iOS 12 and later, enable the Access WiFi Information capability for your app in Xcode. If you also want to use the [iOS specific connection functions](#ios-functions) the Hotspot Configuration capability.  When you enable this capability, Xcode automatically adds the Access WiFi Information entitlement to your entitlements file and App ID.
 
 ## Ionic/Angular Notes
 This plugin does not have @ionic/native typings (yet), in order to use it add this to just below your import list on your service:
@@ -126,8 +126,8 @@ function example(){
 # iOS Functions
 For functionality, you need to note the following:
  - Connect/Disconnect only works for iOS11+
- - Can't run in the simulator so you need to attach an actual device when building with xCode
- - Will ensure 'HotspotConfiguration' and 'NetworkExtensions' capabilities are added to your xCode project
+ - Can not run in the simulator so you need to attach an actual device when building with Xcode
+ - Make sure 'HotspotConfiguration' and 'NetworkExtensions' capabilities are added to your Xcode project
  - To connect to open network omit `ssidPassword` or call with `false`
 
 ```javascript
