@@ -8,7 +8,7 @@
  *      http://www.apache.org/licenses/LICENSE-2.0
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express oWPA2r implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
@@ -86,6 +86,10 @@ var WifiWizard2 = {
                 if (typeof wifi.auth == "object") {
 
                     switch (wifi.auth.algorithm) {
+		    	case "WPA2":
+                            networkInformation.push("WPA2");
+                            networkInformation.push(wifi.auth.password);
+                            break;
                         case "WPA":
                             networkInformation.push("WPA");
                             networkInformation.push(wifi.auth.password);
@@ -123,11 +127,12 @@ var WifiWizard2 = {
     /**
      * Remove wifi network configuration
      * @param {string|int} [SSID]
+     * @param {string} [algorithm]
      * @returns {Promise<any>}
      */
-    remove: function (SSID) {
+    remove: function (SSID, algorithm) {
         return new Promise(function (resolve, reject) {
-            cordova.exec(resolve, reject, "WifiWizard2", "remove", [WifiWizard2.formatWifiString(SSID)]);
+            cordova.exec(resolve, reject, "WifiWizard2", "remove", [WifiWizard2.formatWifiString(SSID), algorithm || ""]);
         });
     },
 
@@ -161,7 +166,7 @@ var WifiWizard2 = {
             WifiWizard2.add(wifiConfig).then(function (newNetID) {
 
                 // Successfully updated or added wifiConfig
-                cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID), bindAll]);
+                cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID), bindAll, wifiConfig.auth.algorithm || ""]);
 
                 // Catch error adding/updating network
             }).catch(function (error) {
@@ -172,7 +177,7 @@ var WifiWizard2 = {
 
                     // This error above should only be returned when the add method was able to pull a network ID (as it tries to update instead of adding)
                     // Lets go ahead and attempt to connect to that SSID (using the existing wifi configuration)
-                    cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID), bindAll]);
+                    cordova.exec(resolve, reject, "WifiWizard2", "connect", [WifiWizard2.formatWifiString(SSID), bindAll, wifiConfig.auth.algorithm || ""]);
 
                 } else {
 
@@ -192,13 +197,14 @@ var WifiWizard2 = {
      * call WifiWizard2.disable() instead of disconnect.
      *
      * @param {string|int} [SSID=all]
+     * @param {string} [algorithm]
      * @returns {Promise<any>}
      */
-    disconnect: function (SSID) {
+    disconnect: function (SSID, algorithm) {
         return new Promise(function (resolve, reject) {
 
             if (SSID) {
-                cordova.exec(resolve, reject, "WifiWizard2", "disconnectNetwork", [WifiWizard2.formatWifiString(SSID)]);
+                cordova.exec(resolve, reject, "WifiWizard2", "disconnectNetwork", [WifiWizard2.formatWifiString(SSID), algorithm || ""]);
             } else {
                 cordova.exec(resolve, reject, "WifiWizard2", "disconnect", []);
             }
@@ -211,24 +217,26 @@ var WifiWizard2 = {
      * @param {string|int} [SSID]
      * @param {boolean} [bindAll=false]                            Whether or not to bind all network requests to this wifi network
      * @param {boolean} [waitForConnection=false]        Whether or not to wait before resolving promise until connection to wifi is verified
+     * @param {string} [algorithm]
      * @returns {Promise<any>}
      */
-    enable: function (SSID, bindAll, waitForConnection) {
+    enable: function (SSID, bindAll, waitForConnection, algorithm) {
         return new Promise(function (resolve, reject) {
             bindAll = bindAll ? true : false;
             waitForConnection = waitForConnection ? true : false;
-            cordova.exec(resolve, reject, "WifiWizard2", "enable", [WifiWizard2.formatWifiString(SSID), bindAll, waitForConnection]);
+            cordova.exec(resolve, reject, "WifiWizard2", "enable", [WifiWizard2.formatWifiString(SSID), bindAll, waitForConnection, algorithm || ""]);
         });
     },
 
     /**
      * Disable Network
      * @param {string|int} [SSID]
+     * @param {string} [algorithm]
      * @returns {Promise<any>}
      */
-    disable: function (SSID) {
+    disable: function (SSID, algorithm) {
         return new Promise(function (resolve, reject) {
-            cordova.exec(resolve, reject, "WifiWizard2", "disable", [WifiWizard2.formatWifiString(SSID)]);
+            cordova.exec(resolve, reject, "WifiWizard2", "disable", [WifiWizard2.formatWifiString(SSID), algorithm || ""]);
         });
     },
 
@@ -395,11 +403,12 @@ var WifiWizard2 = {
     /**
      * Get Network ID from SSID
      * @param {string|int} [SSID]
+     * @param {string} [algorithm]
      * @returns {Promise<any>}
      */
-    getSSIDNetworkID: function (SSID) {
+    getSSIDNetworkID: function (SSID, algorithm) {
         return new Promise(function (resolve, reject) {
-            cordova.exec(resolve, reject, "WifiWizard2", "getSSIDNetworkID", [WifiWizard2.formatWifiString(SSID)]);
+            cordova.exec(resolve, reject, "WifiWizard2", "getSSIDNetworkID", [WifiWizard2.formatWifiString(SSID), algorithm || ""]);
         });
     },
 
@@ -561,6 +570,12 @@ var WifiWizard2 = {
             // open network
             wifiConfig.auth = {
                 algorithm: "NONE"
+            };
+        } else if (algorithm === "WPA2") {
+            wifiConfig.auth = {
+                algorithm: algorithm,
+                password: WifiWizard2.formatWifiString(password)
+                // Other parameters can be added depending on algorithm.
             };
         } else if (algorithm === "WPA") {
             wifiConfig.auth = {

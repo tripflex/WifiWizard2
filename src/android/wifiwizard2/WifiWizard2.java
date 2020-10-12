@@ -379,11 +379,13 @@ public class WifiWizard2 extends CordovaPlugin {
       String newPass = data.getString(2);
       boolean isHiddenSSID = data.getBoolean(3);
 
+      Log.d(TAG, "SET SSID: " + newSSID);
+
       wifi.hiddenSSID = isHiddenSSID;
 
-      if (authType.equals("WPA") || authType.equals("WPA2")) {
+      if (authType.equals("WPA2")) {
        /**
-        * WPA Data format:
+        * WPA2 Data format:
         * 0: ssid
         * 1: auth
         * 2: password
@@ -401,7 +403,28 @@ public class WifiWizard2 extends CordovaPlugin {
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
 
-        wifi.networkId = ssidToNetworkId(newSSID);
+        wifi.networkId = ssidToNetworkId(newSSID, authType);
+
+      } else if (authType.equals("WPA")) {
+       /**
+        * WPA Data format:
+        * 0: ssid
+        * 1: auth
+        * 2: password
+        * 3: isHiddenSSID
+        */
+        wifi.SSID = newSSID;
+        wifi.preSharedKey = newPass;
+
+        wifi.status = WifiConfiguration.Status.ENABLED;
+        wifi.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP);
+        wifi.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP);
+        wifi.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK);
+        wifi.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP);
+        wifi.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP);
+        wifi.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
+
+        wifi.networkId = ssidToNetworkId(newSSID, authType);
 
       } else if (authType.equals("WEP")) {
        /**
@@ -433,7 +456,7 @@ public class WifiWizard2 extends CordovaPlugin {
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
         wifi.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
 
-        wifi.networkId = ssidToNetworkId(newSSID);
+        wifi.networkId = ssidToNetworkId(newSSID, authType);
 
       } else if (authType.equals("NONE")) {
        /**
@@ -445,7 +468,7 @@ public class WifiWizard2 extends CordovaPlugin {
         */
         wifi.SSID = newSSID;
         wifi.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
-        wifi.networkId = ssidToNetworkId(newSSID);
+        wifi.networkId = ssidToNetworkId(newSSID, authType);
 
       } else {
 
@@ -454,7 +477,6 @@ public class WifiWizard2 extends CordovaPlugin {
         return false;
 
       }
-
       // Set network to highest priority (deprecated in API >= 26)
       if( API_VERSION < 26 ){
         wifi.priority = getMaxWifiPriority(wifiManager) + 1;
@@ -515,18 +537,20 @@ public class WifiWizard2 extends CordovaPlugin {
     String ssidToEnable = "";
     String bindAll = "false";
     String waitForConnection = "false";
+    String authType = "";
 
     try {
       ssidToEnable = data.getString(0);
       bindAll = data.getString(1);
       waitForConnection = data.getString(2);
+      authType = data.getString(3);
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
       Log.d(TAG, e.getMessage());
       return;
     }
 
-    int networkIdToEnable = ssidToNetworkId(ssidToEnable);
+    int networkIdToEnable = ssidToNetworkId(ssidToEnable, authType);
 
     try {
 
@@ -584,16 +608,18 @@ public class WifiWizard2 extends CordovaPlugin {
     }
 
     String ssidToDisable = "";
+    String authType = "";
 
     try {
       ssidToDisable = data.getString(0);
+      authType = data.getString(1);
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
       Log.d(TAG, e.getMessage());
       return false;
     }
 
-    int networkIdToDisconnect = ssidToNetworkId(ssidToDisable);
+    int networkIdToDisconnect = ssidToNetworkId(ssidToDisable, authType);
 
     try {
 
@@ -639,8 +665,9 @@ public class WifiWizard2 extends CordovaPlugin {
     // TODO: Verify the type of data!
     try {
       String ssidToDisconnect = data.getString(0);
+      String authType = data.getString(1);
 
-      int networkIdToRemove = ssidToNetworkId(ssidToDisconnect);
+      int networkIdToRemove = ssidToNetworkId(ssidToDisconnect, authType);
 
       if (networkIdToRemove > -1) {
 
@@ -688,17 +715,19 @@ public class WifiWizard2 extends CordovaPlugin {
 
     String ssidToConnect = "";
     String bindAll = "false";
-
+    String authType = "";
     try {
       ssidToConnect = data.getString(0);
       bindAll = data.getString(1);
+      authType = data.getString(2);
+
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
       Log.d(TAG, e.getMessage());
       return;
     }
 
-    int networkIdToConnect = ssidToNetworkId(ssidToConnect);
+    int networkIdToConnect = ssidToNetworkId(ssidToConnect, authType);
 
     if (networkIdToConnect > -1) {
       // We disable the network before connecting, because if this was the last connection before
@@ -811,17 +840,19 @@ public class WifiWizard2 extends CordovaPlugin {
     }
 
     String ssidToDisconnect = "";
+    String authType = "";
 
     // TODO: Verify type of data here!
     try {
       ssidToDisconnect = data.getString(0);
+      authType = data.getString(1);
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
       Log.d(TAG, e.getMessage());
       return false;
     }
 
-    int networkIdToDisconnect = ssidToNetworkId(ssidToDisconnect);
+    int networkIdToDisconnect = ssidToNetworkId(ssidToDisconnect, authType);
 
     if (networkIdToDisconnect > 0) {
 
@@ -1088,16 +1119,18 @@ public class WifiWizard2 extends CordovaPlugin {
     }
 
     String ssidToGetNetworkID = "";
+    String authType = "";
 
     try {
       ssidToGetNetworkID = data.getString(0);
+      authType = data.getString(1);
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
       Log.d(TAG, e.getMessage());
       return false;
     }
 
-    int networkIdToConnect = ssidToNetworkId(ssidToGetNetworkID);
+    int networkIdToConnect = ssidToNetworkId(ssidToGetNetworkID, authType);
     callbackContext.success(networkIdToConnect);
 
     return true;
@@ -1206,8 +1239,7 @@ public class WifiWizard2 extends CordovaPlugin {
    * This method takes a given String, searches the current list of configured WiFi networks, and
    * returns the networkId for the network if the SSID matches. If not, it returns -1.
    */
-  private int ssidToNetworkId(String ssid) {
-
+  private int ssidToNetworkId(String ssid, String authType) {
     try {
 
       int maybeNetId = Integer.parseInt(ssid);
@@ -1215,22 +1247,72 @@ public class WifiWizard2 extends CordovaPlugin {
       return maybeNetId;
 
     } catch (NumberFormatException e) {
-
       List<WifiConfiguration> currentNetworks = wifiManager.getConfiguredNetworks();
       int networkId = -1;
-
-      // For each network in the list, compare the SSID with the given one
+      // For each network in the list, compare the SSID with the given one and check if authType matches
       for (WifiConfiguration test : currentNetworks) {
-        if (test.SSID != null && test.SSID.equals(ssid)) {
-          networkId = test.networkId;
+        if (test.SSID != null) {
+            if (authType.length() == 0) {
+              if(test.SSID.equals(ssid)) {
+                networkId = test.networkId;
+              }
+            } else {
+              String testSSID = test.SSID + this.getSecurityType(test);
+              if(testSSID.equals(ssid + authType)) {
+                networkId = test.networkId;
+              }
+            }
         }
       }
-
+      // Fallback to WPA if WPA2 is not found
+      if (networkId == -1 && authType.substring(0,3).equals("WPA")) {
+        for (WifiConfiguration test : currentNetworks) {
+          if (test.SSID != null) {
+              if (authType.length() == 0) {
+                if(test.SSID.equals(ssid)) {
+                  networkId = test.networkId;
+                }
+              } else {
+                String testSSID = test.SSID + this.getSecurityType(test).substring(0,3);
+                if(testSSID.equals(ssid + authType)) {
+                  networkId = test.networkId;
+                }
+              }
+          }
+        }
+      }
       return networkId;
-
     }
   }
 
+  // Get the different configured security types
+  static public String getSecurityType(WifiConfiguration wifiConfig) {
+
+    if (wifiConfig.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.NONE)) {
+        // If we never set group ciphers, wpa_supplicant puts all of them.
+        // For open, we don't set group ciphers.
+        // For WEP, we specifically only set WEP40 and WEP104, so CCMP
+        // and TKIP should not be there.
+        if (!wifiConfig.allowedGroupCiphers.get(WifiConfiguration.GroupCipher.CCMP)
+                && (wifiConfig.allowedGroupCiphers.get(WifiConfiguration.GroupCipher.WEP40)
+                        || wifiConfig.allowedGroupCiphers.get(WifiConfiguration.GroupCipher.WEP104))) {
+            return "WEP";
+        } else {
+            return "NONE";
+        }
+    } else if (wifiConfig.allowedProtocols.get(WifiConfiguration.Protocol.RSN)) {
+        return "WPA2";
+    } else if (wifiConfig.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.WPA_EAP)) {
+        return "WPA";//"WPA_EAP";
+    } else if (wifiConfig.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.IEEE8021X)) {
+        return "WPA";//"IEEE8021X";
+    } else if (wifiConfig.allowedProtocols.get(WifiConfiguration.Protocol.WPA)) {
+        return "WPA";
+    } else {
+        Log.w(TAG, "Unknown security type from WifiConfiguration, falling back on open.");
+        return "NONE";
+    }
+  }
   /**
    * This method enables or disables the wifi
    */
