@@ -1320,7 +1320,7 @@ public class WifiWizard2 extends CordovaPlugin {
    */
   private boolean verifyWifiEnabled() {
 
-    Log.d(TAG, "verifyWifiEnabled entered.");
+    Log.d(TAG, "verify wifi enabled entered.");
 
     if (!wifiManager.isWifiEnabled()) {
 
