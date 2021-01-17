@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/maxcodefaster/WifiWizard2.git"
+    "url": "git+https://github.com/tripflex/wifiwizard2.git"
   },
   "author": "Myles McNamara",
   "license": "Apache 2.0",
