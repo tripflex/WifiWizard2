@@ -16,9 +16,6 @@
         <clobbers target="window.WifiWizard2" />
     </js-module>
 
-    <!-- ES6 promise polyfill -->
-    <dependency id="es6-promise-plugin" version="4.1.0" />
-
     <!-- android -->
     <platform name="android">
 
