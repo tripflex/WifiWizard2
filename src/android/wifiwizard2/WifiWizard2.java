@@ -1734,6 +1734,12 @@ public class WifiWizard2 extends CordovaPlugin {
     if( API_VERSION > 21 ){
       Log.d(TAG, "registerBindALL: registering net changed receiver");
       desired = new AP(netID,null,null);
+
+      try {
+        // Unregister net changed receiver -- should only be registered in API versions > 21
+        cordova.getActivity().getApplicationContext().unregisterReceiver(networkChangedReceiver);
+      } catch (Exception e) {}
+
       cordova.getActivity().getApplicationContext().registerReceiver(networkChangedReceiver, NETWORK_STATE_CHANGED_FILTER);
     } else {
       Log.d(TAG, "registerBindALL: API older than 21, bindall ignored.");
@@ -1748,11 +1754,15 @@ public class WifiWizard2 extends CordovaPlugin {
    * being routed through Wifi.
    */
   private void maybeResetBindALL(){
+    maybeResetBindALL(false);
+  }
+
+  private void maybeResetBindALL(boolean forceReset){
 
     Log.d(TAG, "maybeResetBindALL");
 
     // desired should have a value if receiver is registered
-    if( desired != null ){
+    if( desired!=null || forceReset ){
 
       if( API_VERSION > 21 ){
 
@@ -1763,19 +1773,19 @@ public class WifiWizard2 extends CordovaPlugin {
 
       }
 
-      // Lollipop OS or newer
-      if ( API_VERSION >= 23 ) {
-        connectivityManager.bindProcessToNetwork(null);
-      } else if( API_VERSION >= 21 && API_VERSION < 23 ){
-        connectivityManager.setProcessDefaultNetwork(null);
-      }
-
       if ( API_VERSION > 21 && networkCallback != null) {
 
         try {
           // Same behavior as releaseNetworkRequest
           connectivityManager.unregisterNetworkCallback(networkCallback); // Added in API 21
         } catch (Exception e) {}
+      }
+
+      // Lollipop OS or newer
+      if ( API_VERSION >= 23 ) {
+        connectivityManager.bindProcessToNetwork(null);
+      } else if( API_VERSION >= 21 && API_VERSION < 23 ){
+        connectivityManager.setProcessDefaultNetwork(null);
       }
 
       networkCallback = null;
@@ -1795,7 +1805,7 @@ public class WifiWizard2 extends CordovaPlugin {
     Log.d(TAG, "WifiWizard2: resetBindALL");
 
     try {
-      maybeResetBindALL();
+      maybeResetBindALL(true);
       callbackContext.success("Successfully reset BindALL");
     } catch (Exception e) {
       Log.e(TAG, "InterruptedException error.", e);
@@ -1857,6 +1867,11 @@ public class WifiWizard2 extends CordovaPlugin {
         }
       };
 
+      try {
+        // Same behavior as releaseNetworkRequest
+        connectivityManager.unregisterNetworkCallback(networkCallback); // Added in API 21
+      } catch (Exception e) {}
+
       connectivityManager.requestNetwork(request, networkCallback);
 
       // Only lollipop (API 21 && 22) use setProcessDefaultNetwork, API < 21 already does this by default
@@ -1876,6 +1891,11 @@ public class WifiWizard2 extends CordovaPlugin {
           connectivityManager.setProcessDefaultNetwork(network);
         }
       };
+
+      try {
+        // Same behavior as releaseNetworkRequest
+        connectivityManager.unregisterNetworkCallback(networkCallback); // Added in API 21
+      } catch (Exception e) {}
 
       connectivityManager.requestNetwork(request, networkCallback);
 
