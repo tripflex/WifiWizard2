@@ -655,13 +655,13 @@ cordova.define('wifiwizard2.WifiWizard2', function (require, exports, module) {
 		 *
 		 * @param {string|int} [SSID]
 		 * @param {string} [password=]
-		 * @param {string} [alhorithm=WPA]
+		 * @param {string} [alhorithm=OPEN] OPEN|WEP|WPA|WPA2|WPA3
 		 * @param {booleab} [isHiddenSSID]
 		 * @returns {Promise<any>}
 		 */
 		specifierConnection: function (SSID, password, alhorithm, isHiddenSSID) {
 			isHiddenSSID = isHiddenSSID ? true : false;
-			alhorithm = alhorithm ? alhorithm : 'WPA';
+			alhorithm = alhorithm ? alhorithm : 'NONE';
 
 			return new Promise(function (resolve, reject) {
 				if (!SSID) {

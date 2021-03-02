@@ -1971,6 +1971,8 @@ public class WifiWizard2 extends CordovaPlugin {
   *  Specifier one network to connect wifi providing ssid and password
   *  Author: Anthony Sychev (hello at dm211 dot com)
   *
+  *  If you not provide pass or algorithm is not set as WPE|WPA|WPA2|WPA3 is represent as default Open network
+  *
   *  DOC: https://developer.android.com/reference/android/net/wifi/WifiNetworkSpecifier.Builder
   */
   private void specifierConnection(CallbackContext callbackContext, JSONArray data) {
@@ -1997,13 +1999,13 @@ public class WifiWizard2 extends CordovaPlugin {
 
         WifiNetworkSpecifier.Builder builder = new WifiNetworkSpecifier.Builder();
         builder.setSsid(SSID);
-
-        if(Algorithm.matches("/WEP|WPA|WPA2/gim"))
+        
+        if(Algorithm.matches("/WEP|WPA|WPA2/gim") && PASS != '')
         {
           builder.setWpa2Passphrase(PASS);
         }
 
-        if(Algorithm.matches("/WPA3/gim"))
+        if(Algorithm.matches("/WPA3/gim") && PASS != '')
         {
           builder.setWpa3Passphrase(PASS);
         }
