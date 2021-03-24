@@ -49,7 +49,7 @@ import android.provider.Settings;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.os.Build.VERSION;
+import android.os.Build;
 
 import java.net.URL;
 import java.net.InetAddress;
@@ -60,11 +60,16 @@ import java.net.HttpURLConnection;
 
 import java.net.UnknownHostException;
 
+import java.util.ArrayList;
+import android.net.wifi.WifiNetworkSpecifier;
+
 public class WifiWizard2 extends CordovaPlugin {
 
   private static final String TAG = "WifiWizard2";
-  private static final int API_VERSION = VERSION.SDK_INT;
+  private static final int API_VERSION = Build.VERSION.SDK_INT;
 
+  private static final String SPECIFIER_NETWORK = "specifierConnection"; //>=29
+  
   private static final String ADD_NETWORK = "add";
   private static final String REMOVE_NETWORK = "remove";
   private static final String CONNECT_NETWORK = "connect";
@@ -109,7 +114,7 @@ public class WifiWizard2 extends CordovaPlugin {
   private WifiManager wifiManager;
   private CallbackContext callbackContext;
   private JSONArray passedData;
-
+  
   public static LocationManager locationManager;
 
   private ConnectivityManager connectivityManager;
@@ -163,7 +168,14 @@ public class WifiWizard2 extends CordovaPlugin {
 
     this.callbackContext = callbackContext;
     this.passedData = data;
-
+   
+    //>= 29
+    if(action.equals(SPECIFIER_NETWORK))
+    {
+      this.specifierConnection(callbackContext, data);
+      return true;
+    }
+    
     // Actions that do not require WiFi to be enabled
     if (action.equals(IS_LOCATION_ENABLED)) {
       this.isLocationEnabled(callbackContext);
@@ -223,7 +235,7 @@ public class WifiWizard2 extends CordovaPlugin {
       callbackContext.error("WIFI_NOT_ENABLED");
       return true; // Even though enable wifi failed, we still return true and handle error in callback
     }
-
+    
     // Actions that DO require WiFi to be enabled
     if (action.equals(ADD_NETWORK)) {
       this.add(callbackContext, data);
@@ -696,7 +708,7 @@ public class WifiWizard2 extends CordovaPlugin {
    * @param data JSON Array, with [0] being SSID to connect
    */
   private void connect(CallbackContext callbackContext, JSONArray data) {
-    Log.d(TAG, "WifiWizard2: connect entered.");
+    Log.v(TAG, "WifiWizard2: connect entered.");
 
     if (!validateData(data)) {
       callbackContext.error("CONNECT_INVALID_DATA");
@@ -1953,5 +1965,101 @@ public class WifiWizard2 extends CordovaPlugin {
       this.bssid = bssid;
     }
 
+  }
+
+  /*
+  *  Specifier one network to connect wifi providing ssid and password
+  *  Author: Anthony Sychev (hello at dm211 dot com)
+  *
+  *  If you not provide pass or algorithm is not set as WPE|WPA|WPA2|WPA3 is represent as default Open network
+  *
+  *  DOC: https://developer.android.com/reference/android/net/wifi/WifiNetworkSpecifier.Builder
+  */
+  private void specifierConnection(CallbackContext callbackContext, JSONArray data) {
+    Log.d(TAG, "WifiWizard2: 211 - Api >= 29 WiFi connection specifier your api version: "+API_VERSION);
+
+    if (API_VERSION >= 29) {
+      if (!validateData(data)) {
+        callbackContext.error("SPECIFIER_INVALID_DATA");
+        Log.d(TAG, "WifiWizard2: 211 - specifierConnection invalid data.");
+        return;
+      }
+
+      try {
+        String SSID = data.getString(0);
+        String PASS = data.getString(1);
+        String Algorithm = data.getString(2);
+        Boolean isHidden = data.getBoolean(3);
+
+        Log.d(TAG, "WifiWizard2: 211 - data: "+ data);
+        Log.d(TAG, "WifiWizard2: 211 - ssid: "+ SSID);
+        Log.d(TAG, "WifiWizard2: 211 - pass: "+ PASS);
+        Log.d(TAG, "WifiWizard2: 211 - Algorithm: "+ Algorithm);
+        Log.d(TAG, "WifiWizard2: 211 - ishidden: "+ isHidden);
+
+        WifiNetworkSpecifier.Builder builder = new WifiNetworkSpecifier.Builder();
+        builder.setSsid(SSID);
+        
+        if(Algorithm.matches("/WEP|WPA|WPA2/gim") && PASS.length() > 0)
+        {
+          builder.setWpa2Passphrase(PASS);
+        }
+
+        if(Algorithm.matches("/WPA3/gim") && PASS != '')
+        {
+          builder.setWpa3Passphrase(PASS);
+        }
+
+        if(isHidden)
+        {
+          builder.setIsHiddenSsid(true);
+        }
+
+        WifiNetworkSpecifier wifiNetworkSpecifier = builder.build();
+
+        //--
+
+        NetworkRequest.Builder networkRequestBuilder1 = new NetworkRequest.Builder();
+
+        networkRequestBuilder1.addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+          networkRequestBuilder1.setNetworkSpecifier(wifiNetworkSpecifier);
+        }
+
+        NetworkRequest networkRequest = networkRequestBuilder1.build();
+        ConnectivityManager cm = (ConnectivityManager)
+                cordova.getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager.NetworkCallback networkCallback = new
+                ConnectivityManager.NetworkCallback() {
+                  @Override
+                  public void onAvailable(Network network) {
+                    super.onAvailable(network);
+                    Log.d(TAG, "WifiWizard2: 211 onAvailable:" + network);
+                    callbackContext.success();
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                      cm.bindProcessToNetwork(network);
+                    }
+                  }
+
+                  @Override
+                  public void onUnavailable() {
+                    super.onUnavailable();
+                    Log.d(TAG, "WifiWizard2: 211 onUnavailable");
+                    callbackContext.error("SPECIFIER_NETWORK_UNAVAILABLE");
+                  }
+                };
+        cm.requestNetwork(networkRequest, networkCallback);
+
+      } catch (Exception e) {
+        callbackContext.error(e.getMessage());
+        Log.d(TAG, e.getMessage());
+      }
+    }else{
+      callbackContext.error("SPECIFIER_INVALID_API_VERSION");
+      Log.d(TAG, "WifiWizard2: 211 - specifierConnection invalid Android API Version is below as needed.");
+    }
   }
 }
