@@ -466,7 +466,7 @@ public class WifiWizard2 extends CordovaPlugin {
       }
 
       if(API_VERSION >= 29) {
-        networkCallback = new ConnectivityManager.NetworkCallback() {
+        this.networkCallback = new ConnectivityManager.NetworkCallback() {
           @Override
           public void onAvailable(Network network) {
             connectivityManager.bindProcessToNetwork(network);
@@ -491,11 +491,13 @@ public class WifiWizard2 extends CordovaPlugin {
 
         NetworkRequest.Builder networkRequestBuilder1 = new NetworkRequest.Builder();
         networkRequestBuilder1.addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
+        //removeCapability added for hotspots without internet
         networkRequestBuilder1.removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
         networkRequestBuilder1.setNetworkSpecifier(wifiNetworkSpecifier);
 
         NetworkRequest nr = networkRequestBuilder1.build();
         ConnectivityManager cm = (ConnectivityManager) cordova.getActivity().getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        //timeout add because "No devices found" wasn't handled correct and doesn't throw Unavailable
         cm.requestNetwork(nr, this.networkCallback, 15000);
       } else {
         // After processing authentication types, add or update network
