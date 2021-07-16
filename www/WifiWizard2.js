@@ -397,7 +397,7 @@ var WifiWizard2 = {
     /**
      * Get Wifi IP and Subnet Address
      *
-     * This method returns a JSON object similar to: { "ip": "0.0.0.0", "subnet": "0.0.0.0" }
+     * This method returns a JSON object similar to: { "ip": "0.0.0.0", "subnet": "0.0.0.0", "macAddress":"0.0.0.0"}
      * @returns {Promise<any>}
      */
     getWifiIPInfo: function () {
