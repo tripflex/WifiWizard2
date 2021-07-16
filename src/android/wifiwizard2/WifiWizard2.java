@@ -17,7 +17,8 @@ package wifiwizard2;
 import org.apache.cordova.*;
 
 import java.util.List;
-import java.util.concurrent.Future; 
+import java.util.Collections;
+import java.util.concurrent.Future;
 import java.lang.InterruptedException;
 
 import org.json.JSONArray;
@@ -95,9 +96,9 @@ public class WifiWizard2 extends CordovaPlugin {
   private static final String RESET_BIND_ALL = "resetBindAll";
   private static final String SET_BIND_ALL = "setBindAll";
   private static final String GET_WIFI_IP_INFO = "getWifiIPInfo";
+  private static final String GET_MAC_ADDRESS = "getMacAddress";
 
 
-  
   private static final int SCAN_RESULTS_CODE = 0; // Permissions request code for getScanResults()
   private static final int SCAN_CODE = 1; // Permissions request code for scan()
   private static final int LOCATION_REQUEST_CODE = 2; // Permissions request code
@@ -187,6 +188,7 @@ public class WifiWizard2 extends CordovaPlugin {
       }
 
     } else if (action.equals(GET_WIFI_IP_ADDRESS) || action.equals(GET_WIFI_IP_INFO)) {
+      String macAddress = getMacAddress();
       String[] ipInfo = getWiFiIPAddress();
       String ip = ipInfo[0];
       String subnet = ipInfo[1];
@@ -206,9 +208,13 @@ public class WifiWizard2 extends CordovaPlugin {
 
       result.put("ip", ip);
       result.put("subnet", subnet);
+      result.put("macAddress", macAddress);
 
       callbackContext.success(result);
       return true;
+    } else if (action.equals(GET_MAC_ADDRESS)){
+        String macAddress = getMacAddress();
+        callbackContext.success(macAddress);
     }
 
     boolean wifiIsEnabled = verifyWifiEnabled();
@@ -1199,7 +1205,7 @@ public class WifiWizard2 extends CordovaPlugin {
    * @param basicIdentifier A flag to get BSSID if true or SSID if false.
    * @return true if SSID found, false if not.
    */
-  private boolean getWifiServiceInfo(CallbackContext callbackContext, boolean basicIdentifier) {    
+  private boolean getWifiServiceInfo(CallbackContext callbackContext, boolean basicIdentifier) {
     if (API_VERSION >= 23 && !cordova.hasPermission(ACCESS_FINE_LOCATION)) { //Android 9 (Pie) or newer
       requestLocationPermission(WIFI_SERVICE_INFO_CODE);
       bssidRequested = basicIdentifier;
@@ -1211,47 +1217,80 @@ public class WifiWizard2 extends CordovaPlugin {
         callbackContext.error("UNABLE_TO_READ_WIFI_INFO");
         return false;
       }
-  
+
       // Only return SSID or BSSID when actually connected to a network
       SupplicantState state = info.getSupplicantState();
       if (!state.equals(SupplicantState.COMPLETED)) {
         callbackContext.error("CONNECTION_NOT_COMPLETED");
         return false;
       }
-  
+
       String serviceInfo;
       if (basicIdentifier) {
         serviceInfo = info.getBSSID();
       } else {
         serviceInfo = info.getSSID();
       }
-  
+
       if (serviceInfo == null || serviceInfo.isEmpty() || serviceInfo == "0x") {
         callbackContext.error("WIFI_INFORMATION_EMPTY");
         return false;
       }
-  
+
       // http://developer.android.com/reference/android/net/wifi/WifiInfo.html#getSSID()
       if (serviceInfo.startsWith("\"") && serviceInfo.endsWith("\"")) {
         serviceInfo = serviceInfo.substring(1, serviceInfo.length() - 1);
       }
-  
+
       callbackContext.success(serviceInfo);
       return true;
     }
   }
 
   /**
-   * This method retrieves the current WiFi status
+   * This method return mac address
    *
-   * @param callbackContext A Cordova callback context
-   * @return true if WiFi is enabled, fail will be called if not.
+   * @return mac address
    */
-  private boolean isWifiEnabled(CallbackContext callbackContext) {
-    boolean isEnabled = wifiManager.isWifiEnabled();
-    callbackContext.success(isEnabled ? "1" : "0");
-    return isEnabled;
+  private String getMacAddress() {
+    try {
+      String interfaceName = "wlan0";
+      List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+      for (NetworkInterface intf : interfaces) {
+        if (!intf.getName().equalsIgnoreCase(interfaceName)) {
+          continue;
+        }
+
+        byte[] mac = intf.getHardwareAddress();
+        if (mac == null) {
+          return "";
+        }
+
+        StringBuilder buf = new StringBuilder();
+        for (byte aMac : mac) {
+          buf.append(String.format("%02X:", aMac));
+        }
+        if (buf.length() > 0) {
+          buf.deleteCharAt(buf.length() - 1);
+        }
+        return buf.toString();
+      }
+    } catch (Exception ex) {
+    }
+    return "";
   }
+
+/**
+ * This method retrieves the current WiFi status
+ *
+ * @param callbackContext A Cordova callback context
+ * @return true if WiFi is enabled, fail will be called if not.
+ */
+private boolean isWifiEnabled(CallbackContext callbackContext){
+        boolean isEnabled=wifiManager.isWifiEnabled();
+        callbackContext.success(isEnabled?"1":"0");
+        return isEnabled;
+        }
 
   /**
    * This method takes a given String, searches the current list of configured WiFi networks, and
@@ -1260,7 +1299,7 @@ public class WifiWizard2 extends CordovaPlugin {
   private int ssidToNetworkId(String ssid) {
 
     try {
-      
+
       int maybeNetId = Integer.parseInt(ssid);
       Log.d(TAG, "ssidToNetworkId passed SSID is integer, probably a Network ID: " + ssid);
       return maybeNetId;
@@ -1544,7 +1583,7 @@ public class WifiWizard2 extends CordovaPlugin {
 
   /**
    * Check if we can conenct to router via HTTP connection
-   * 
+   *
    * @param callbackContext
    * @param doPing
    * @return boolean
@@ -1623,7 +1662,7 @@ public class WifiWizard2 extends CordovaPlugin {
 
   /**
    * Check if HTTP connection to URL is reachable
-   * 
+   *
    * @param checkURL
    * @return boolean
    */
