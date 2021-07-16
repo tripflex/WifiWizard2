@@ -178,7 +178,6 @@ public class WifiWizard2 extends CordovaPlugin {
     } else if (action.equals(GET_WIFI_ROUTER_IP_ADDRESS)) {
 
       String ip = getWiFiRouterIP();
-      String macAddress = getMacAddress();
 
       if ( ip == null || ip.equals("0.0.0.0")) {
         callbackContext.error("NO_VALID_ROUTER_IP_FOUND");
@@ -189,6 +188,7 @@ public class WifiWizard2 extends CordovaPlugin {
       }
 
     } else if (action.equals(GET_WIFI_IP_ADDRESS) || action.equals(GET_WIFI_IP_INFO)) {
+      String macAddress = getMacAddress();
       String[] ipInfo = getWiFiIPAddress();
       String ip = ipInfo[0];
       String subnet = ipInfo[1];
@@ -212,7 +212,7 @@ public class WifiWizard2 extends CordovaPlugin {
 
       callbackContext.success(result);
       return true;
-    } else if (action.equals(GET_MAC_ADDRESS))){
+    } else if (action.equals(GET_MAC_ADDRESS)){
         String macAddress = getMacAddress();
         callbackContext.success(macAddress);
     }

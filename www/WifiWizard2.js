@@ -366,7 +366,7 @@ var WifiWizard2 = {
 			cordova.exec(resolve, reject, "WifiWizard2", "setBindAll", []);
 		});
     },
-    
+
     /**
      * Get Wifi Router IP from DHCP
      * @returns {Promise<any>}
@@ -383,6 +383,15 @@ var WifiWizard2 = {
     getWifiIP: function () {
         return new Promise(function (resolve, reject) {
             cordova.exec(resolve, reject, "WifiWizard2", "getWifiIP", []);
+        });
+    },
+    /**
+     * Get Mac Address
+     * @returns {Promise<any>}
+     */
+    getMacAddress: function () {
+        return new Promise(function (resolve, reject) {
+            cordova.exec(resolve, reject, "WifiWizard2", "getMacAddress", []);
         });
     },
     /**
@@ -623,7 +632,7 @@ var WifiWizard2 = {
 
         if(device.platform === "Android" && parseInt(device.version.split('.')[0]) >= 10){
             // Do not add "" To the SSID, as the new method for Android Q does not support it
-        } 
+        }
         else {
             if (ssid.charAt(0) != '"') {
                 ssid = '"' + ssid;
