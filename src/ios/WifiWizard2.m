@@ -3,6 +3,7 @@
 #import <net/if.h>
 #import <SystemConfiguration/CaptiveNetwork.h>
 #import <NetworkExtension/NetworkExtension.h>  
+#import <NetworkExtension/NEHotspotNetwork.h>
 
 @implementation WifiWizard2
 
@@ -160,20 +161,43 @@
 }
 
 - (void)getConnectedSSID:(CDVInvokedUrlCommand*)command {
-    CDVPluginResult *pluginResult = nil;
-    NSDictionary *r = [self fetchSSIDInfo];
+    __block NSString *ssid = nil;
+    __block CDVPluginResult *pluginResult = nil;
+    if (@available(iOS 14.0, *)) {
+        [NEHotspotNetwork fetchCurrentWithCompletionHandler:^(NEHotspotNetwork * _Nullable currentNetwork) {
+            ssid = [currentNetwork SSID];
+            NSLog(@"debugjeje");
 
-    NSString *ssid = [r objectForKey:(id)kCNNetworkInfoKeySSID]; //@"SSID"
-
-    if (ssid && [ssid length]) {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:ssid];
+            NSLog(@"%@", currentNetwork);
+            if (ssid && [ssid length]) {
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:ssid];
+            } else {
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Not available"];
+            }
+            [self.commandDelegate sendPluginResult:pluginResult
+                                        callbackId:command.callbackId];
+        }];
     } else {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Not available"];
+        NSArray *ifs = (__bridge_transfer NSArray *)CNCopySupportedInterfaces();
+        NSDictionary *info;
+        for (NSString *ifnam in ifs) {
+            info = (__bridge_transfer NSDictionary *)CNCopyCurrentNetworkInfo((__bridge CFStringRef)ifnam);
+            if (info && [info count]) {
+                ssid = [info objectForKey:@"SSID"];
+                break;
+            }
+        }
+        if (ssid && [ssid length]) {
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:ssid];
+        } else {
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Not available"];
+        }
+        [self.commandDelegate sendPluginResult:pluginResult
+                                    callbackId:command.callbackId];
     }
 
-    [self.commandDelegate sendPluginResult:pluginResult
-                                callbackId:command.callbackId];
 }
+
 
 - (void)getConnectedBSSID:(CDVInvokedUrlCommand*)command {
     CDVPluginResult *pluginResult = nil;
